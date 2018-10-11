@@ -1,0 +1,21 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.3.1/css/all.css" integrity="sha384-mzrmE5qonljUremFsqc01SB46JvROS7bZs3IO2EmfFsd15uHvIt+Y8vEf7N7fWAU" crossorigin="anonymous">
+</head>
+<body>
+    <script src="gyronorm.complete.min.js"></script>
+    <script src="volume.js"></script>
+    <script src="direction.js"></script>
+    <div style="display: flex; width: 100%; flex-direction: column">
+        <p align="center" style="margin: auto">
+                Mettez votre téléphone à plat et orientez le dans la direction souhaitée
+            </p>
+        <div style="margin: auto" class="fas fa-7x fa-volume-down" id="volumeIcon"></div>
+        <label style="margin: auto">Volume
+            <input type="range" min="1" max="100" value="50" onchange="updateVolume(this.value);">
+        </label>
+    </div>
+</body>
+</html>
