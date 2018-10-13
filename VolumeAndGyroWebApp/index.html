@@ -7,12 +7,13 @@
 </head>
 <body>
     <div class="container">
-        <p align="center" class="content">
-            Mettez votre téléphone à plat et orientez le dans la direction souhaitée
-        </p>
+        <h1 align="center" class="content">
+            Mettez votre téléphone à plat
+            <br/>et orientez le dans la direction souhaitée
+        </h1>
         <div class="content fas fa-7x fa-volume-down" id="volumeIcon"></div>
         <label class="content">Volume
-            <input type="range" min="1" max="100" value="50" onchange="updateVolume(this.value);">
+            <input type="range" min="1" max="100" onchange="updateVolume(this.value);">
         </label>
         <div class="orientation-displayer content">
             <p>Device Orientation</p>
@@ -31,6 +32,8 @@
                 </tr>
             </table>
         </div>
+        <br/>
+        <br/>
         <div class="garden content">
             <div class="ball"></div>
         </div>

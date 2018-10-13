@@ -6,8 +6,8 @@
     let radius = garden.clientWidth/2;
     let marginToRemove = ball.clientHeight/2 - 7; //garden + ball border widths
     let circleMiddle = [
-        garden.clientTop + radius - marginToRemove,
-        garden.clientLeft + radius - marginToRemove
+        garden.clientTop + radius - ball.clientHeight/2,
+        garden.clientLeft + radius - ball.clientWidth/2
     ];
 
     ball.style.top  = (circleMiddle[0]) + "px";
