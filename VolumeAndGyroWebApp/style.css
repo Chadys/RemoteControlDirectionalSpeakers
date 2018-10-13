@@ -1,0 +1,30 @@
+.container {
+    display: flex;
+    width: 100%;
+    flex-direction: column
+}
+
+.content {
+    margin: auto
+}
+
+.orientation-displayer{
+    display: none;
+}
+
+.garden {
+  position: relative;
+  width : 200px;
+  height: 200px;
+  border: 5px solid #CCC;
+  border-radius: 100%;
+}
+
+.ball {
+  position: absolute;
+  width : 70px;
+  height: 70px;
+  background: #800007;
+  border: 2px solid black;
+  border-radius: 100%;
+}

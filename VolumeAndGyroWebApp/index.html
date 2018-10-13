@@ -3,19 +3,40 @@
 <head>
     <meta charset="UTF-8">
     <link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.3.1/css/all.css" integrity="sha384-mzrmE5qonljUremFsqc01SB46JvROS7bZs3IO2EmfFsd15uHvIt+Y8vEf7N7fWAU" crossorigin="anonymous">
+    <link rel="stylesheet" type="text/css" href="style.css">
 </head>
 <body>
-    <script src="gyronorm.complete.min.js"></script>
-    <script src="volume.js"></script>
-    <script src="direction.js"></script>
-    <div style="display: flex; width: 100%; flex-direction: column">
-        <p align="center" style="margin: auto">
-                Mettez votre téléphone à plat et orientez le dans la direction souhaitée
-            </p>
-        <div style="margin: auto" class="fas fa-7x fa-volume-down" id="volumeIcon"></div>
-        <label style="margin: auto">Volume
+    <div class="container">
+        <p align="center" class="content">
+            Mettez votre téléphone à plat et orientez le dans la direction souhaitée
+        </p>
+        <div class="content fas fa-7x fa-volume-down" id="volumeIcon"></div>
+        <label class="content">Volume
             <input type="range" min="1" max="100" value="50" onchange="updateVolume(this.value);">
         </label>
+        <div class="orientation-displayer content">
+            <p>Device Orientation</p>
+            <table>
+                <tr>
+                    <th>Alpha</th>
+                    <th>Beta</th>
+                    <th>Gamma</th>
+                    <th>Absolute</th>
+                </tr>
+                <tr>
+                    <td id="doAlpha"></td>
+                    <td id="doBeta"></td>
+                    <td id="doGamma"></td>
+                    <td id="doAbsolute"></td>
+                </tr>
+            </table>
+        </div>
+        <div class="garden content">
+            <div class="ball"></div>
+        </div>
     </div>
 </body>
+<script src="gyronorm.complete.min.js"></script>
+<script src="volume.js"></script>
+<script src="direction.js"></script>
 </html>
