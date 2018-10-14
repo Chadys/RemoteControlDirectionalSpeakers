@@ -1,17 +1,18 @@
 import socket
+import TCP_socket_attributes as tcpAttr
 
-
-TCP_IP = '37.59.57.203'
-TCP_PORT = 55555
-BUFFER_SIZE = 1024
-MESSAGE = ["EHLO", "HELO"]
 
 s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-s.connect((TCP_IP, TCP_PORT))
-s.send(MESSAGE[0])
-data = s.recv(BUFFER_SIZE)
+s.connect(('0.0.0.0', 6543))  #8888 #6543
+s.send(tcpAttr.module_directory_attributes['HANDSHAKE_MESSAGE'][0].encode('utf-8'))
+s.send(tcpAttr.module_directory_attributes['HANDSHAKE_MESSAGE'][0].encode('utf-8'))
+data = s.recv(tcpAttr.module_directory_attributes['BUFFER_SIZE'])
 print(data)
-s.send(MESSAGE[1])
-data = s.recv(BUFFER_SIZE)
+data = s.recv(tcpAttr.module_directory_attributes['BUFFER_SIZE'])
+print(data)
+s.send(tcpAttr.module_directory_attributes['HANDSHAKE_MESSAGE'][1].encode('utf-8'))
+data = s.recv(tcpAttr.module_directory_attributes['BUFFER_SIZE'])
+print(data)
+data = s.recv(tcpAttr.module_directory_attributes['BUFFER_SIZE'])
 print(data)
 s.close()

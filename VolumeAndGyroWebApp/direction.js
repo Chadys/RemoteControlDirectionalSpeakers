@@ -40,7 +40,7 @@
                 ball.style.top = circleMiddle[0] - marginToRemove / 2 + (radius * Math.sin(radAngle)) + "px";
                 ball.style.left = circleMiddle[1] - marginToRemove / 2 + (radius * Math.cos(radAngle)) + "px";
                 if (ws.readyState = ws.OPEN)
-                    ws.send('{"direction":'+data.do.alpha+'}');
+                    ws.send('{"direction":"'+data.do.alpha+'"}');
             });
         }).catch(function (e) {
             alert(errorNotAvailableMessage);
