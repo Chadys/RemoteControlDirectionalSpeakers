@@ -1,7 +1,7 @@
 import asyncio
 import websockets
 import json
-# import TCP_socket_attributes as tcpAttr
+import TCP_socket_attributes as tcpAttr
 
 
 async def retransfer(websocket, _):
@@ -42,8 +42,11 @@ def broadcast(data):
 
 loop = asyncio.get_event_loop()
 broadcast_data = loop.create_future()
-websocket_server = websockets.serve(retransfer, '0.0.0.0', 8765, loop=loop)
-tcpsocket_server = asyncio.start_server(send_to_subscribers, '', 6543, loop=loop)
+websocket_server = websockets.serve(retransfer, '', 8765, loop=loop)
+tcpsocket_server = asyncio.start_server(send_to_subscribers,
+                                        tcpAttr.webapp_server_attributes['TCP_IP'],
+                                        tcpAttr.webapp_server_attributes['TCP_PORT'],
+                                        loop=loop)
 websocket_server, tcpsocket_server = loop.run_until_complete(asyncio.gather(
     websocket_server,
     tcpsocket_server
