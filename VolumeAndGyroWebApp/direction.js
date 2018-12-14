@@ -1,6 +1,6 @@
 (function() {
     window.addEventListener("load", function() {
-        let ws = new WebSocket("ws://" + window.location.hostname + ":8765/");
+        let ws = new WebSocket("ws://" + window.location.hostname + ":8766/");
         let gn = new GyroNorm();
         let errorNotAvailableMessage = "No gyroscope found, you can't change the direction with this device";
         let garden = document.getElementsByClassName('garden')[0];
