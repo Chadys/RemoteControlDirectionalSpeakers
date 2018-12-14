@@ -1,0 +1,16 @@
+{
+  "label": "leap-volume-app",
+  "package": "com.dev.leapVolumeApp",
+  "version": "1.0.0",
+  "description": "Module sending a volume data from a python application running on a computer with a leapmotion connected",
+  "services": [
+    {
+      "name": "volumeService",
+      "format": "JSON",
+      "type": "TCP",
+      "port": 6544
+    }
+  ],
+  "os": "mac",
+  "type": "output"
+}

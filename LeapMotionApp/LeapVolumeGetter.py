@@ -105,7 +105,7 @@ class LeapVolumeControlSocketServer(Leap.Listener):
 
     def send_to_client(self):
         with self.message_to_send_condition:
-            self.message_to_send = str(self.volumePercent).encode()
+            self.message_to_send = '{{"volume": {}}}'.format(self.volumePercent).encode()
             self.message_to_send_condition.notifyAll()
 
     def send_to_client_worker(self):
