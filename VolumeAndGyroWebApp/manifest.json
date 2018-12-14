@@ -1,0 +1,22 @@
+{
+  "label": "volume-and-gyro-web-app",
+  "package": "com.dev.volumeAndGyroWebApp",
+  "version": "1.0.0",
+  "description": "Module sending gyroscope and volume data from a web application running on a smartphone",
+  "services": [
+    {
+      "name": "volumeService",
+      "format": "JSON",
+      "type": "TCP",
+      "port": 6542
+    },
+    {
+      "name": "directionService",
+      "format": "JSON",
+      "type": "TCP",
+      "port": 6543
+    }
+  ],
+  "os": "ios/android",
+  "type": "output"
+}
