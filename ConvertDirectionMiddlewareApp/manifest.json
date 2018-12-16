@@ -1,0 +1,23 @@
+{
+  "label": "convert-direction-app",
+  "package": "com.dev.convertDirectionApp",
+  "version": "1.0.0",
+  "description": "Module getting data from kinect, launchpad, webapp or joystick service and sending direction",
+  "deps": [
+    {
+      "name": "directionService",
+      "optional": false
+    }
+  ],
+
+  "services": [
+    {
+      "name": "directionService",
+      "format": "JSON",
+      "type": "TCP",
+      "port": 6545
+    }
+  ],
+  "os": "Win/Mac/Linux",
+  "type": "middle"
+}

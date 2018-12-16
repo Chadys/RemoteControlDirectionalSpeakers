@@ -19,3 +19,8 @@ leap_server_attributes = {
     'TCP_PORT': 6544,
     'MAX_QUEUED_CONNECTION': 5
 }
+
+middleware_server_attributes = {
+    'TCP_IP': '',
+    'TCP_PORT': 6545,
+}
