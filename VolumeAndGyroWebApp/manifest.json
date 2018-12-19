@@ -5,13 +5,13 @@
   "description": "Module sending gyroscope and volume data from a web application running on a smartphone",
   "services": [
     {
-      "name": "volumeService",
+      "name": "volumeWebappService",
       "format": "JSON",
       "type": "TCP",
       "port": 6542
     },
     {
-      "name": "directionService",
+      "name": "directionWebappService",
       "format": "JSON",
       "type": "TCP",
       "port": 6543

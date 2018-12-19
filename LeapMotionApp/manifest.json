@@ -5,7 +5,7 @@
   "description": "Module sending a volume data from a python application running on a computer with a leapmotion connected",
   "services": [
     {
-      "name": "volumeService",
+      "name": "volumeLeapService",
       "format": "JSON",
       "type": "TCP",
       "port": 6544

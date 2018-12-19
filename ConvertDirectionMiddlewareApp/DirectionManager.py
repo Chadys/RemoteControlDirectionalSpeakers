@@ -7,13 +7,16 @@ class DirectionType(Enum):
     Kinect = auto(),
     Launchpad = auto(),
     WebApp = auto(),
-    Joystick = auto()
+    Joystick = auto(),
+    Unknown = auto()
 
 async def convert_and_retransfer_kinect_data(reader, writer):
     # TODO
+    await retransfer_direction_data(reader, writer)
 
 async def convert_and_retransfer_launchpad_data(reader, writer):
     # TODO
+    await retransfer_direction_data(reader, writer)
 
 async def retransfer_direction_data(reader, writer):
     while not reader.at_eof() and not broadcast_data_direction.cancelled():
@@ -25,9 +28,9 @@ async def retransfer_direction_data(reader, writer):
 
 async def get_port_and_type_from_direction_service():
     # TODO
+    return 'ip-vincent-ordi-kinect', 'port-vincent-server-tcp-kinect', DirectionType.Kinect
 
 async def connect_to_any_direction_output():
-    # tODO use client equivalent to start_server
     while not broadcast_data_direction.cancelled():
         ip, port, direction_type = await get_port_and_type_from_direction_service()
         reader, writer = await asyncio.open_connection(ip, port, loop=loop)
@@ -36,6 +39,8 @@ async def connect_to_any_direction_output():
             await convert_and_retransfer_kinect_data(reader, writer)
         elif direction_type == DirectionType.Launchpad:
             await convert_and_retransfer_launchpad_data(reader, writer)
+        elif direction_type == DirectionType.Unknown:
+            continue
         else:  # DirectionType.WebApp or DirectionType.Joystick
             await retransfer_direction_data(reader, writer)
 

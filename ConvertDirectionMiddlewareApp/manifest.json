@@ -5,8 +5,21 @@
   "description": "Module getting data from kinect, launchpad, webapp or joystick service and sending direction",
   "deps": [
     {
-      "name": "directionService",
-      "optional": false
+      "name": "skeletonKinectService",
+      "priority": 100
+
+    },
+    {
+      "name": "coordinateLaunchpadService",
+      "priority": 90
+    },
+    {
+      "name": "directionWebappService",
+      "priority": 80
+    },
+    {
+      "name": "directionJoystickService",
+      "priority": 70
     }
   ],
 
