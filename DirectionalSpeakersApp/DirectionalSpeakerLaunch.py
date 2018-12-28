@@ -6,6 +6,20 @@ from pybass import *
 from pybassmix import *
 
 
+def get_speakers_count():
+    # hack to get real number because on my machine the number of speakers returned from BASS_GetInfo is always 0
+    sides = [BASS_SPEAKER_LEFT, BASS_SPEAKER_RIGHT]
+    i = 0
+    while True:
+        for j in range(2):
+            h = BASS_StreamCreateFile(False, b'test.mp3', 0, 0,
+                                      BASS_SPEAKER_N(i + 1) | sides[j])
+            if not h:
+                return i*2 + j
+            BASS_StreamFree(h)
+        i += 1
+
+
 def handle_bass_error(line):
     print(f'l {line} | BASS error {get_error_description(BASS_ErrorGetCode())}')
     exit(1)
@@ -18,8 +32,9 @@ def get_stream():
 def print_infos():
     print('============== BASS Information ==============')
     bi = BASS_INFO()
-    if not BASS_GetInfo(bi):
+    if not BASS_GetInfo(ctypes.byref(bi)):
         handle_bass_error(getframeinfo(currentframe()).lineno)
+    print('number of speakers available = %d' % bi.speakers)
     print('============== Device Information ==============')
 
     bd = BASS_DEVICEINFO()
@@ -33,49 +48,40 @@ def print_infos():
     print(f'device selected = {BASS_GetDevice()}')
 
 
-def init_channels(mixer, handles):
-    sides = [BASS_SPEAKER_LEFT, BASS_SPEAKER_RIGHT]
-    i = 0
-    while True:
-        for j in range(2):
-            if not BASS_Mixer_StreamAddChannel(mixer, handles[-1], BASS_SPEAKER_N(i + 1) | sides[j]):
-                handles.pop()
-                return
-            handles.append(get_stream())
-        i += 1
-    #
-    # if not BASS_Mixer_StreamAddChannel(mixer, handle, BASS_MIXER_MATRIX):
-    #     handle_bass_error(getframeinfo(currentframe()).lineno)
-    # matrix = (ctypes.c_float*8)(1.0,0.0, 0.0,0.0, 0.0,0.0, 0.0,1.0)
-    # if not BASS_Mixer_ChannelSetMatrix(handle, ctypes.cast(matrix, ctypes.POINTER(ctypes.c_float))):
-    #     handle_bass_error(getframeinfo(currentframe()).lineno)
+def init_channels(mixer, handles, num_speakers):
+    # use only one output of each physical speaker
+    for i in range(1, num_speakers+1):
+        if not BASS_Mixer_StreamAddChannel(mixer, handles[-1],
+                                           BASS_SPEAKER_N(i) | BASS_SPEAKER_LEFT | BASS_STREAM_AUTOFREE):
+            handles.pop()
+            return
+        handles.append(get_stream())
 
 
 def play(mixer, handles):
-    drift_correction = 35000
-    if not BASS_ChannelSetPosition(handles[2], drift_correction, BASS_POS_BYTE) or \
-            not BASS_ChannelSetPosition(handles[3], drift_correction, BASS_POS_BYTE):
-        handle_bass_error(getframeinfo(currentframe()).lineno)
+    # drift_correction = 35000
+    # if not BASS_ChannelSetPosition(handles[1], drift_correction, BASS_POS_BYTE):
+    #     handle_bass_error(getframeinfo(currentframe()).lineno)
     BASS_ChannelPlay(mixer, False)
 
 
-def create_mixer(handle):
+def create_mixer(handle, num_speakers):
     bc = BASS_CHANNELINFO()
     if not BASS_ChannelGetInfo(handle, bc):
         handle_bass_error(getframeinfo(currentframe()).lineno)
-    mixer = BASS_Mixer_StreamCreate(bc.freq, 4, 0)
+    mixer = BASS_Mixer_StreamCreate(bc.freq, num_speakers, 0)
     if not mixer:
         handle_bass_error(getframeinfo(currentframe()).lineno)
     return mixer
 
 
-def get_speaker_volume(direction, speaker_pos, global_volume = 1.0):
+def get_speaker_volume(direction, speaker_pos, global_volume=1.0):
     angle = abs(direction - speaker_pos)
     if angle > 180:
         angle = 360 - angle
     angle /= 360  # get value between 0 and 1
     angle = 1 - angle  # invert value
-    volume = pow(angle, 5)*(2*angle-0.5)
+    volume = pow(angle, 5) * (2*angle-0.5)
     volume = 0 if volume < 0 else 1 if volume > 1 else volume
     return volume * global_volume
 
@@ -89,17 +95,19 @@ def init_pos(num_output):
 
 
 def main():
-    if not BASS_Init(-1, 44100, BASS_DEVICE_SPEAKERS | BASS_DEVICE_MONO, 0, 0):
+    if not BASS_Init(-1, 44100, BASS_DEVICE_MONO, 0, 0):
         handle_bass_error(getframeinfo(currentframe()).lineno)
     print_infos()
+    num_speakers = get_speakers_count()
+    print(f'Current device has {num_speakers} outputs')
 
     handles = [get_stream()]
     if not handles[0]:
         handle_bass_error(getframeinfo(currentframe()).lineno)
 
-    mixer = create_mixer(handles[0])
-    init_channels(mixer, handles)
-    print(f'Current device has {len(handles)} outputs')
+    mixer = create_mixer(handles[0], num_speakers)
+    init_channels(mixer, handles, num_speakers)
+    print(f'Using {len(handles)} outputs')
     pos = init_pos(len(handles))
     play(mixer, handles)
     # for handle in handles:
@@ -107,15 +115,18 @@ def main():
     #         handle_bass_error(getframeinfo(currentframe()).lineno)
 
     channel_length = BASS_ChannelGetLength(handles[0], BASS_POS_BYTE)
-    print(f'Music lenght : {BASS_ChannelBytes2Seconds(handles[0], channel_length)} sec')
+    print(f'Music length : {BASS_ChannelBytes2Seconds(handles[0], channel_length)} sec')
 
     while BASS_ChannelIsActive(mixer) == BASS_ACTIVE_PLAYING:
         channel_position = BASS_ChannelGetPosition(handles[0], BASS_POS_BYTE)
         seconds_counter = int(BASS_ChannelBytes2Seconds(handles[0], channel_position))
         print(seconds_counter)
-        direction = seconds_counter % 360
+        direction = seconds_counter*5 % 360
+        print(f'Direction : {direction}')
+        # vol = [0,1,0,0]
         for index, handle in enumerate(handles):
             if not BASS_ChannelSetAttribute(handle, BASS_ATTRIB_VOL, get_speaker_volume(direction, pos[index], 0.6)):
+            # if not BASS_ChannelSetAttribute(handle, BASS_ATTRIB_VOL, vol[index]):
                 handle_bass_error(getframeinfo(currentframe()).lineno)
         time.sleep(2)
     if not BASS_Free():
