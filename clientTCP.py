@@ -2,41 +2,13 @@ import socket
 import TCP_socket_attributes as tcpAttr
 
 
-# s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-# s.connect((tcpAttr.leap_server_attributes['TCP_IP'], tcpAttr.leap_server_attributes['TCP_PORT']))
-# s.connect((tcpAttr.master_client_attributes['TCP_IP'], tcpAttr.master_client_attributes['TCP_PORT']))
-# s.send(tcpAttr.master_client_attributes['HANDSHAKE_MESSAGE'][0].encode('utf-8'))
-# s.send(tcpAttr.master_client_attributes['HANDSHAKE_MESSAGE'][0].encode('utf-8'))
-# while True:
-#     data = s.recv(tcpAttr.master_client_attributes['BUFFER_SIZE'])
-#     if not data:
-#         break
-#     print(data)
-# data = s.recv(tcpAttr.master_client_attributes['BUFFER_SIZE'])
-# print(data)
-# s.send("{}".encode('utf-8'))
-# data = s.recv(tcpAttr.master_client_attributes['BUFFER_SIZE'])
-# print(data)
-# data = s.recv(tcpAttr.master_client_attributes['BUFFER_SIZE'])
-# print(data)
-# s.close()
+s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+s.connect((tcpAttr.webapp_server_attributes['TCP_IP_DIRECTION'], tcpAttr.webapp_server_attributes['TCP_PORT_DIRECTION']))
 
-def display_man(s):
-    data = s.recv(tcpAttr.master_client_attributes['BUFFER_SIZE'])
-    if not data or data.decode("utf-8") != tcpAttr.master_client_attributes['HANDSHAKE_MESSAGE'][0]:
-        return
-    s.send('{"coucou":2}'.encode('utf-8'))
-    data = s.recv(tcpAttr.master_client_attributes['BUFFER_SIZE'])
-    if not data or data.decode("utf-8") != tcpAttr.master_client_attributes['HANDSHAKE_MESSAGE'][1]:
-        return
-    s.send('man'.encode('utf-8'))
+while True:
     data = s.recv(tcpAttr.master_client_attributes['BUFFER_SIZE'])
     if not data:
-        return
-    print(data.decode("utf-8"))
+        break
+    print(data)
 
 
-s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-s.connect((tcpAttr.master_client_attributes['TCP_IP'], tcpAttr.master_client_attributes['TCP_PORT']))
-display_man(s)
-s.close()

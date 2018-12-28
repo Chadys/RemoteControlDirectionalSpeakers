@@ -45,12 +45,12 @@ async def connect_to_any_direction_output():
             await retransfer_direction_data(reader, writer)
 
 async def send_to_subscribers(reader, writer):
-    while not reader.at_eof():
+    while not reader.at_eof() or broadcast_data_direction.cancelled():
         read_task = loop.create_task(reader.read(100))
         for f in asyncio.as_completed({read_task, broadcast_data_direction}):
             data = await f
             if isinstance(data, dict):
-                writer.write(data.popitem()[1].encode())
+                writer.write(json.dumps(data).encode())
                 await writer.drain()
                 if not read_task.done():
                     read_task.cancel()
@@ -79,18 +79,16 @@ tcpsocket_send_server = asyncio.start_server(send_to_subscribers,
                                                   tcpAttr.middleware_server_attributes['TCP_PORT'],
                                                   loop=loop)
 
-tasks = connect_to_any_direction_output,\
+tasks = connect_to_any_direction_output(),\
         tcpsocket_send_server
 
-tasks = loop.run_until_complete(asyncio.gather(*tasks))
 
 try:
-    loop.run_forever()
+    tasks = loop.run_until_complete(asyncio.gather(*tasks))
 except KeyboardInterrupt:
     pass
 finally:
     tcpsocket_send_server.close()
-    loop.run_until_complete(tasks[1].wait_closed())
     broadcast_data_direction.cancel()
     asyncio.gather(*asyncio.Task.all_tasks()).cancel()
     loop.call_soon(loop.close)

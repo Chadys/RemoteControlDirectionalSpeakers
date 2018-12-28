@@ -19,7 +19,7 @@
                 document.getElementById("volumeIcon").classList.add('fa-volume-up');
             }
             if (ws.readyState = ws.OPEN)
-                ws.send('{"volume":"'+newVolume+'"}');
+                ws.send('{"volume":'+newVolume+'}');
         });
     });
 })();

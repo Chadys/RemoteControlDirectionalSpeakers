@@ -20,7 +20,12 @@ leap_server_attributes = {
     'MAX_QUEUED_CONNECTION': 5
 }
 
+joystick_server_attributes = {
+    'TCP_IP': '',
+    'TCP_PORT': 6545
+}
+
 middleware_server_attributes = {
     'TCP_IP': '',
-    'TCP_PORT': 6545,
+    'TCP_PORT': 6546,
 }

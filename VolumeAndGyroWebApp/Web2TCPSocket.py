@@ -16,11 +16,14 @@ async def retransfer(websocket, _, isVolume):
 
 async def send_to_subscribers(reader, writer, isVolume):
     while not reader.at_eof():
+        broadcast_data = broadcast_data_volume if isVolume else broadcast_data_direction
+        if broadcast_data.cancelled():
+            break
         read_task = loop.create_task(reader.read(100))
-        for f in asyncio.as_completed({read_task, broadcast_data_volume if isVolume else broadcast_data_direction}):
+        for f in asyncio.as_completed({read_task, broadcast_data}):
             data = await f
             if isinstance(data, dict):
-                writer.write(data.popitem()[1].encode())
+                writer.write(json.dumps(data).encode())
                 await writer.drain()
                 if not read_task.done():
                     read_task.cancel()
@@ -29,7 +32,7 @@ async def send_to_subscribers(reader, writer, isVolume):
                 if reader.at_eof():
                     break
                 message = data.decode().strip()
-                print('Client sent: ' + message)
+                print(f'Client sent: {message}')
     writer.close()
 
 
@@ -67,16 +70,14 @@ tasks = websocket_server_volume,\
         tcpsocket_server_volume,\
         tcpsocket_server_direction
 
-tasks = loop.run_until_complete(asyncio.gather(*tasks))
-
 try:
+    tasks = loop.run_until_complete(asyncio.gather(*tasks))
     loop.run_forever()
 except KeyboardInterrupt:
     pass
 finally:
     tcpsocket_server_volume.close()
     tcpsocket_server_direction.close()
-    loop.run_until_complete(asyncio.gather(tasks[2].wait_closed(), tasks[3].wait_closed()))
     broadcast_data_volume.cancel()
     broadcast_data_direction.cancel()
     asyncio.gather(*asyncio.Task.all_tasks()).cancel()
