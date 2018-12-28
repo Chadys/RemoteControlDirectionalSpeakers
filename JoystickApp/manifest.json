@@ -1,0 +1,16 @@
+{
+  "label": "joystick-app",
+  "package": "com.dev.joystickApp",
+  "version": "1.0.0",
+  "description": "Module sending direction data from joystick axes",
+  "services": [
+    {
+      "name": "directionJoystickService",
+      "format": "JSON",
+      "type": "TCP",
+      "port": 6545
+    }
+  ],
+  "os": "Win/Mac/Linux",
+  "type": "output"
+}

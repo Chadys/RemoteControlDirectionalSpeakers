@@ -7,7 +7,6 @@
     {
       "name": "skeletonKinectService",
       "priority": 100
-
     },
     {
       "name": "coordinateLaunchpadService",
@@ -28,7 +27,7 @@
       "name": "directionService",
       "format": "JSON",
       "type": "TCP",
-      "port": 6545
+      "port": 6546
     }
   ],
   "os": "Win/Mac/Linux",
