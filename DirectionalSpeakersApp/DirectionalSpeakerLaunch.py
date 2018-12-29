@@ -86,6 +86,33 @@ def get_speaker_volume(direction, speaker_pos, global_volume=1.0):
     return volume * global_volume
 
 
+def update_all_speakers_volume(handles, direction, pos, global_volume=1.0):
+    # vol = [0,1,0,0]
+    for index, handle in enumerate(handles):
+        if not BASS_ChannelSetAttribute(handle, BASS_ATTRIB_VOL, get_speaker_volume(direction, pos[index], global_volume)):
+        # if not BASS_ChannelSetAttribute(handle, BASS_ATTRIB_VOL, vol[index]):
+            handle_bass_error(getframeinfo(currentframe()).lineno)
+
+
+def update_all_speakers_volume2(handles, direction, all_pos, global_volume=1.0):
+    vol = []
+    total = 0
+    for speaker_pos in all_pos:
+        angle = abs(direction - speaker_pos)
+        if angle > 180:
+            angle = 360 - angle
+        angle = 180 - angle  # invert value
+        if angle < 30:
+            angle = 0
+        vol.append(angle)
+        total += angle
+    vol = [(x/total)*global_volume for x in vol]
+    for index, handle in enumerate(handles):
+        if not BASS_ChannelSetAttribute(handle, BASS_ATTRIB_VOL, vol[index]):
+            handle_bass_error(getframeinfo(currentframe()).lineno)
+
+
+
 def init_pos(num_output):
     pos = []
     part = 360 / num_output
@@ -123,11 +150,7 @@ def main():
         print(seconds_counter)
         direction = seconds_counter*5 % 360
         print(f'Direction : {direction}')
-        # vol = [0,1,0,0]
-        for index, handle in enumerate(handles):
-            if not BASS_ChannelSetAttribute(handle, BASS_ATTRIB_VOL, get_speaker_volume(direction, pos[index], 0.6)):
-            # if not BASS_ChannelSetAttribute(handle, BASS_ATTRIB_VOL, vol[index]):
-                handle_bass_error(getframeinfo(currentframe()).lineno)
+        update_all_speakers_volume2(handles, direction, pos, 0.6)
         time.sleep(2)
     if not BASS_Free():
         handle_bass_error(getframeinfo(currentframe()).lineno)
