@@ -21,12 +21,15 @@ def get_speakers_count():
 
 
 def handle_bass_error(line):
-    print(f'l {line} | BASS error {get_error_description(BASS_ErrorGetCode())}')
+    error_code = BASS_ErrorGetCode()
+    print(f'l {line} | BASS error {error_code} : {get_error_description(error_code)}')
+    BASS_Free()
     exit(1)
 
 
 def get_stream():
-    return BASS_StreamCreateFile(False, b'test.mp3', 0, 0, BASS_STREAM_DECODE | BASS_STREAM_PRESCAN)
+    # return BASS_StreamCreateFile(False, b'test.mp3', 0, 0, BASS_STREAM_DECODE | BASS_STREAM_PRESCAN)
+    return BASS_StreamCreate(8000, 1, BASS_STREAM_DECODE, STREAMPROC_PUSH, None)
 
 
 def print_infos():
@@ -89,8 +92,9 @@ def get_speaker_volume(direction, speaker_pos, global_volume=1.0):
 def update_all_speakers_volume(handles, direction, pos, global_volume=1.0):
     # vol = [0,1,0,0]
     for index, handle in enumerate(handles):
-        if not BASS_ChannelSetAttribute(handle, BASS_ATTRIB_VOL, get_speaker_volume(direction, pos[index], global_volume)):
         # if not BASS_ChannelSetAttribute(handle, BASS_ATTRIB_VOL, vol[index]):
+        if not BASS_ChannelSetAttribute(handle, BASS_ATTRIB_VOL,
+                                        get_speaker_volume(direction, pos[index], global_volume)):
             handle_bass_error(getframeinfo(currentframe()).lineno)
 
 
@@ -112,7 +116,6 @@ def update_all_speakers_volume2(handles, direction, all_pos, global_volume=1.0):
             handle_bass_error(getframeinfo(currentframe()).lineno)
 
 
-
 def init_pos(num_output):
     pos = []
     part = 360 / num_output
@@ -121,12 +124,23 @@ def init_pos(num_output):
     return pos
 
 
+def fill_streams(handles):
+    global data
+    error_value = ctypes.c_uint32(-1).value  # 4294967295, because BASS_StreamPutData return DWORD(-1) in case of error
+    with open('test.pcm', 'rb') as f:
+        data = f.read()
+        for handle in handles:
+            amount = BASS_StreamPutData(handle, data, len(data) | BASS_STREAMPROC_END)
+            if amount == error_value:
+                handle_bass_error(getframeinfo(currentframe()).lineno)
+
+
 def main():
     if not BASS_Init(-1, 44100, BASS_DEVICE_MONO, 0, 0):
         handle_bass_error(getframeinfo(currentframe()).lineno)
     print_infos()
     num_speakers = get_speakers_count()
-    print(f'Current device has {num_speakers} outputs')
+    print(f'Current device has {num_speakers} output(s)')
 
     handles = [get_stream()]
     if not handles[0]:
@@ -134,8 +148,19 @@ def main():
 
     mixer = create_mixer(handles[0], num_speakers)
     init_channels(mixer, handles, num_speakers)
-    print(f'Using {len(handles)} outputs')
-    pos = init_pos(len(handles))
+
+    num_outputs = len(handles)
+    print(f'Using {num_outputs} output(s)')
+    if num_outputs < num_speakers/2:
+        error_code = BASS_ErrorGetCode()
+        print(f'BASS error {error_code} : {get_error_description(error_code)}')
+    if num_outputs == 0:
+        return
+
+    pos = init_pos(num_outputs)
+
+    fill_streams(handles)
+
     play(mixer, handles)
     # for handle in handles:
     #     if not BASS_ChannelSetAttribute(handle, BASS_ATTRIB_FREQ, 300000):
@@ -152,6 +177,7 @@ def main():
         print(f'Direction : {direction}')
         update_all_speakers_volume2(handles, direction, pos, 0.6)
         time.sleep(2)
+
     if not BASS_Free():
         handle_bass_error(getframeinfo(currentframe()).lineno)
 

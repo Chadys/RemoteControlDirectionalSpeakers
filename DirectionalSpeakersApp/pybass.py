@@ -534,10 +534,8 @@ STREAMPROC = func_type(ctypes.c_ulong, HSTREAM, ctypes.c_void_p, ctypes.c_ulong,
 BASS_STREAMPROC_END = 0x80000000# end of user stream flag
 
 # special STREAMPROCs
-def streamproc_dummy(handle, buffer, length, user): return 0
-def streamproc_push(handle, buffer, length, user): return -1
-STREAMPROC_DUMMY = STREAMPROC(streamproc_dummy)# "dummy" stream
-STREAMPROC_PUSH = STREAMPROC(streamproc_push)# push stream
+STREAMPROC_DUMMY = STREAMPROC(0)  # "dummy" stream
+STREAMPROC_PUSH = STREAMPROC(-1)  # push stream
 
 # BASS_StreamCreateFileUser file systems
 STREAMFILE_NOBUFFER = 0
