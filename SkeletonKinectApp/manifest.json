@@ -1,0 +1,16 @@
+{
+  "label": "skeleton-kinect-app",
+  "package": "com.dev.skeletonKinectApp",
+  "version": "1.0.0",
+  "description": "Module sending skeleton data from kinect",
+  "services": [
+    {
+      "name": "skeletonKinectService",
+      "format": "JSON",
+      "type": "TCP",
+      "port": 6546
+    }
+  ],
+  "os": "Win/Mac/Linux",
+  "type": "output"
+}

@@ -3,6 +3,7 @@ import json
 from enum import Enum, auto
 import TCP_socket_attributes as tcpAttr
 
+
 class DirectionType(Enum):
     Kinect = auto(),
     Launchpad = auto(),
@@ -10,13 +11,16 @@ class DirectionType(Enum):
     Joystick = auto(),
     Unknown = auto()
 
+
 async def convert_and_retransfer_kinect_data(reader, writer):
     # TODO
     await retransfer_direction_data(reader, writer)
 
+
 async def convert_and_retransfer_launchpad_data(reader, writer):
     # TODO
     await retransfer_direction_data(reader, writer)
+
 
 async def retransfer_direction_data(reader, writer):
     while not reader.at_eof() and not broadcast_data_direction.cancelled():
@@ -26,9 +30,11 @@ async def retransfer_direction_data(reader, writer):
         broadcast(data)
     writer.close()
 
+
 async def get_port_and_type_from_direction_service():
     # TODO
     return 'ip-vincent-ordi-kinect', 'port-vincent-server-tcp-kinect', DirectionType.Kinect
+
 
 async def connect_to_any_direction_output():
     while not broadcast_data_direction.cancelled():
@@ -43,6 +49,7 @@ async def connect_to_any_direction_output():
             continue
         else:  # DirectionType.WebApp or DirectionType.Joystick
             await retransfer_direction_data(reader, writer)
+
 
 async def send_to_subscribers(reader, writer):
     while not reader.at_eof() or broadcast_data_direction.cancelled():
@@ -73,15 +80,13 @@ loop = asyncio.get_event_loop()
 
 broadcast_data_direction = loop.create_future()
 
-
 tcpsocket_send_server = asyncio.start_server(send_to_subscribers,
-                                                  tcpAttr.middleware_server_attributes['TCP_IP'],
-                                                  tcpAttr.middleware_server_attributes['TCP_PORT'],
-                                                  loop=loop)
+                                             tcpAttr.middleware_server_attributes['TCP_IP'],
+                                             tcpAttr.middleware_server_attributes['TCP_PORT'],
+                                             loop=loop)
 
-tasks = connect_to_any_direction_output(),\
+tasks = connect_to_any_direction_output(), \
         tcpsocket_send_server
-
 
 try:
     tasks = loop.run_until_complete(asyncio.gather(*tasks))

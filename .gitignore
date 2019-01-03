@@ -2,3 +2,7 @@
 .DS_Store
 ._*
 *.dylib
+
+/SkeletonKinectApp/SkeletonKinectApp/.vs/
+/SkeletonKinectApp/SkeletonKinectApp/bin/
+/SkeletonKinectApp/SkeletonKinectApp/obj/
