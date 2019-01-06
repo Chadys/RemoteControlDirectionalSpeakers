@@ -9,6 +9,7 @@ namespace Microsoft.Samples.Kinect.BodyBasics
 	using System;
 	using System.Collections.Generic;
 	using System.ComponentModel;
+	using System.Configuration;
 	using System.Windows;
 	using System.Windows.Media;
 	using Microsoft.Kinect;
@@ -21,7 +22,7 @@ namespace Microsoft.Samples.Kinect.BodyBasics
 		/// <summary>
 		/// Socket server
 		/// </summary>
-		public SynchronousSocketListener synchronousSocketListener = new SynchronousSocketListener(6546);
+		public AsynchronousSocketListener asynchronousSocketListener = new AsynchronousSocketListener(int.Parse(ConfigurationManager.AppSettings["port"]));
 
 		/// <summary>
 		/// Radius of drawn hand circles
@@ -218,7 +219,7 @@ namespace Microsoft.Samples.Kinect.BodyBasics
             // initialize the components (controls) of the window
             this.InitializeComponent();
 
-			SynchronousSocketListener.StartListening();
+			AsynchronousSocketListener.StartListening();
         }
 
         /// <summary>
@@ -330,7 +331,7 @@ namespace Microsoft.Samples.Kinect.BodyBasics
                     dc.DrawRectangle(Brushes.Black, null, new Rect(0.0, 0.0, this.displayWidth, this.displayHeight));
 
                     int penIndex = 0;
-					SynchronousSocketListener.msgToSend = null;
+					AsynchronousSocketListener.msgToSend = null;
 					List<dynamic> listBodies = new List<dynamic>();
 					foreach (Body body in this.bodies)
                     {
@@ -369,7 +370,24 @@ namespace Microsoft.Samples.Kinect.BodyBasics
 
 					if(listBodies != null && listBodies.Count > 0)
 					{
-						SynchronousSocketListener.msgToSend = listBodies;
+						#region Envoyer le body avec le point le plus haut
+						var bodyToSend = listBodies[0];
+						foreach(var body in listBodies)
+						{
+							Dictionary<JointType, Joint> jointPoints = body.Joints;
+							jointPoints.TryGetValue(JointType.Head, out var higher_join);
+							var higher_joint_Y = higher_join.Position.Y;
+							foreach (var joint in body.Joints)
+							{
+								if (joint.Value.Position.Y > higher_joint_Y)
+								{
+									higher_joint_Y = joint.Value.Position.Y;
+									bodyToSend = body;
+								}
+							}
+						}
+						AsynchronousSocketListener.msgToSend = bodyToSend;
+						#endregion
 					}
 
 					// prevent drawing outside of our render area
