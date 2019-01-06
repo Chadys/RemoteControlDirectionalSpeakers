@@ -26,7 +26,7 @@ joystick_server_attributes = {
 }
 
 kinect1_server_attributes = {
-    'TCP_IP': '192.168.1.17',
+    'TCP_IP': '192.168.1.38',
     'BUFFER_SIZE': 8192,
     'TCP_PORT': 6546,
 }
