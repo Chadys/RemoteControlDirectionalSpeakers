@@ -4,7 +4,7 @@
 // </copyright>
 //------------------------------------------------------------------------------
 
-namespace Microsoft.Samples.Kinect.BodyBasics
+namespace SkeletonKinectApp
 {
 	using System;
 	using System.Collections.Generic;
@@ -220,7 +220,9 @@ namespace Microsoft.Samples.Kinect.BodyBasics
             this.InitializeComponent();
 
 			AsynchronousSocketListener.StartListening();
-        }
+
+			tbPortText.Text = "Port : " + ConfigurationManager.AppSettings["port"];
+		}
 
         /// <summary>
         /// INotifyPropertyChangedPropertyChanged event to allow window controls to bind to changeable data
@@ -538,9 +540,18 @@ namespace Microsoft.Samples.Kinect.BodyBasics
         /// <param name="e">event arguments</param>
         private void Sensor_IsAvailableChanged(object sender, IsAvailableChangedEventArgs e)
         {
-            // on failure, set the status text
-            this.StatusText = this.kinectSensor.IsAvailable ? Properties.Resources.RunningStatusText
-                                                            : Properties.Resources.SensorNotAvailableStatusText;
+			
+			// on failure, set the status text
+			if (this.kinectSensor.IsAvailable)
+			{
+				tbStateText.Text = Properties.Resources.RunningStatusText;
+				tbStateText.Foreground = new SolidColorBrush(Colors.Green);
+			}
+			else
+			{
+				tbStateText.Text = Properties.Resources.SensorNotAvailableStatusText;
+				tbStateText.Foreground = new SolidColorBrush(Colors.Red);
+			}
         }
     }
 }

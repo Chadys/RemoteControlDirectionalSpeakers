@@ -32,12 +32,18 @@ kinect1_server_attributes = {
 }
 
 kinect2_server_attributes = {
-    'TCP_IP': '192.168.1.17',
+    'TCP_IP': '192.168.1.38',
     'BUFFER_SIZE': 8192,
     'TCP_PORT': 6547,
 }
 
+# skeleton_kinect_server_attributes = {
+#     'TCP_IP': '192.168.1.38',
+#     'BUFFER_SIZE': 8192,
+#     'TCP_PORT': 6548,
+# }
+
 middleware_server_attributes = {
     'TCP_IP': '',
-    'TCP_PORT': 6548,
+    'TCP_PORT': 6555,
 }

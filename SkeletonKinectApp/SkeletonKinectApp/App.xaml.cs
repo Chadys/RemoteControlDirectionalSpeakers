@@ -4,15 +4,14 @@
 // </copyright>
 //------------------------------------------------------------------------------
 
-namespace Microsoft.Samples.Kinect.BodyBasics
+namespace SkeletonKinectApp
 {
-    using System;
-    using System.Windows;
+	using System.Windows;
 
-    /// <summary>
-    /// Interaction logic for App
-    /// </summary>
-    public partial class App : Application
+	/// <summary>
+	/// Interaction logic for App
+	/// </summary>
+	public partial class App : Application
     {
     }
 }
