@@ -1,12 +1,24 @@
-import socket
 import TCP_socket_attributes as tcpAttr
+import asyncio
 import numpy as np
 import json
+import math
 from collections import namedtuple
 
 
-# def determine_body(bodies):
-#     return [body for body in bodies if body.Joints.__contains__(get_higher_joint(body))][0]
+def angle_body_from_kinect(body):
+    xH, yH, zH = (body.Joints.SpineBase.Position.X, body.Joints.SpineBase.Position.Y, body.Joints.SpineBase.Position.Z)
+    xP, yP, zP = (body.Joints.WristRight.Position.X, body.Joints.WristRight.Position.Y, body.Joints.WristRight.Position.Z)
+
+    alphaH = ((xH * math.sqrt(math.sqrt(math.pow(xP - xH, 2) + math.pow(zP - zH, 2)))) / xP) * (1 / (1 - (xH / xP)))
+    # return np.degrees(np.acos((A * A + B * B - C * C)/(2.0 * A * B)))
+    # return body.Joints.WristRight.Position.Z
+    # return np.degrees(np.arccos(np.clip(np.dot(v1_u, v2_u, v3_u), -1.0, 1.0)))
+    print('ZP = ', zP, "\t", 'ZH = ', zH)
+    angle = np.degrees(np.arcsin(xH / alphaH)) * 2
+    if zP > zH:
+        angle = 100 + (100 - angle)
+    return angle
 
 
 def get_direction(body):
@@ -59,27 +71,56 @@ def angle_between(v1, v2):
     return np.degrees(np.arcsin(np.clip(np.dot(v1_u, v2_u), -1.0, 1.0)))
 
 
-def main():
+async def attempt_connection(state_reader, state_reader2):
+    global reader, writer, reader2, writer2
     try:
-        s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        s.connect((tcpAttr.kinect1_server_attributes['TCP_IP'],
-                   tcpAttr.kinect1_server_attributes['TCP_PORT']))
+        if state_reader is not True:
+            reader, writer = await asyncio.open_connection(tcpAttr.kinect1_server_attributes['TCP_IP'],
+                                                           tcpAttr.kinect1_server_attributes['TCP_PORT'])
+            state_reader = True
+    except:
+        reader = None
+    try:
+        if state_reader2 is not True:
+            reader2, writer2 = await asyncio.open_connection(tcpAttr.kinect2_server_attributes['TCP_IP'],
+                                                             tcpAttr.kinect2_server_attributes['TCP_PORT'])
+            state_reader2 = True
+    except:
+        reader2 = None
+    if reader is None and reader2 is None:
+        print('No kinect server available. Retrying...')
+    return state_reader, state_reader2
 
+
+async def main():
+    try:
+        state_reader = False
+        state_reader2 = False
+        data = None
+        data2 = None
         while True:
-            data = s.recv(tcpAttr.kinect1_server_attributes['BUFFER_SIZE'])
-            if not data:
-                break
-            else:
-                body = json.loads(data, object_hook=lambda d: namedtuple('X', d.keys())(*d.values()))
+            state_reader, state_reader2 = await attempt_connection(state_reader, state_reader2)
+            if state_reader is True and reader is not None:
+                data = await reader.read(tcpAttr.kinect1_server_attributes['BUFFER_SIZE'])
+            if state_reader2 is True and reader2 is not None:
+                data2 = await reader2.read(tcpAttr.kinect2_server_attributes['BUFFER_SIZE'])
+
+            if data is not None:
+                try:
+                    body = json.loads(data, object_hook=lambda d: namedtuple('X', d.keys())(*d.values()))
+                except:
+                    print("Format reçu anormal.")
+                    continue
                 if type(body) is str:
                     print(body)  # means 'None'
                 else:
-                    print(get_direction(body))
+                    print(angle_body_from_kinect(body))
+            if data2 is not None:
+                pass
     except KeyboardInterrupt:
-        pass
-    finally:
+        writer.close()
+        writer2.close()
         pass
 
 
-if __name__ == "__main__":
-    main()
+asyncio.run(main())

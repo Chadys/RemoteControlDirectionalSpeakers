@@ -48,8 +48,16 @@ public class AsynchronousSocketListener
 	{
 		// Get the socket that handles the client request.  
 		Socket listener = (Socket)ar.AsyncState;
-		Socket handler = listener.EndAccept(ar);
-		Send(handler);
+		Socket handler = null;
+		try
+		{
+			handler = listener.EndAccept(ar);
+			Send(handler);
+		}
+		catch
+		{
+			WaitRequest();
+		}
 	}
 
 	private static void Send(Socket handler)
