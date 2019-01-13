@@ -222,6 +222,7 @@ namespace SkeletonKinectApp
 			AsynchronousSocketListener.StartListening();
 
 			tbPortText.Text = "Port : " + ConfigurationManager.AppSettings["port"];
+			tbIpText.Text = AsynchronousSocketListener.ip;
 		}
 
         /// <summary>

@@ -11,6 +11,7 @@ public class AsynchronousSocketListener
 	private static int port { get; set; }
 	public static Socket socket { get; set; }
 	public static dynamic msgToSend { get; set; }
+	public static string ip { get; set; }
 
 	private static IPEndPoint localEndPoint = null;
 
@@ -18,6 +19,7 @@ public class AsynchronousSocketListener
 	{
 		IPHostEntry ipHostInfo = Dns.GetHostEntry(Dns.GetHostName());
 		IPAddress ipAddress = ipHostInfo.AddressList[ipHostInfo.AddressList.Length - 1];
+		ip = "Ip : " + ipAddress.ToString();
 		localEndPoint = new IPEndPoint(ipAddress, port);
 
 		// Create a TCP/IP socket.  
@@ -90,10 +92,7 @@ public class AsynchronousSocketListener
 	{
 		try
 		{
-			// Retrieve the socket from the state object.  
 			Socket handler = (Socket)ar.AsyncState;
-
-			// Complete sending the data to the remote device.  
 			int bytesSent = handler.EndSend(ar);
 		}
 		catch (Exception)
