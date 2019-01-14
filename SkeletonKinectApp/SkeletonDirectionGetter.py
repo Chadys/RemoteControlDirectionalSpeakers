@@ -131,6 +131,91 @@ def init_angle_kinect2(angle_to_use, hand, body, body2):
 #     return angle
 
 
+# def best_angle_body_from_kinect_v2(body, body2, hand):
+#     angle = None
+#     if body is not None:
+#         try:
+#             if (hand == HandState.LEFT.value and body.HandLeftState == HandState.OPEN.value) or \
+#                     (hand == HandState.RIGHT.value and body.HandRightState == HandState.OPEN.value):
+#                 print("K - 1")
+#                 x_h, y_h, z_h = (
+#                     body.Joints.SpineBase.Position.X,
+#                     body.Joints.SpineBase.Position.Y,
+#                     body.Joints.SpineBase.Position.Z)
+#
+#                 if hand == HandState.LEFT.value:
+#                     x_p, y_p, z_p = (
+#                         body.Joints.WristLeft.Position.X,
+#                         body.Joints.WristLeft.Position.Y,
+#                         body.Joints.WristLeft.Position.Z)
+#                 else:
+#                     x_p, y_p, z_p = (
+#                         body.Joints.WristRight.Position.X,
+#                         body.Joints.WristRight.Position.Y,
+#                         body.Joints.WristRight.Position.Z)
+#
+#                 rh = abs(z_p - z_h)
+#                 rp = abs(x_p - x_h)
+#                 angle = np.degrees(np.arctan(rp / rh)) * 2 - 5
+#                 # if rp > rh:
+#                 #     angle = 90 + (100 - angle)
+#                 if x_p > x_h and z_p > z_h:
+#                     angle = 90 + angle
+#                 if x_p > x_h and z_p < z_h:
+#                     angle = 360 - 90 - angle
+#                 if x_p < x_h and z_p < z_h:
+#                     angle = 360 - angle
+#                 if x_p < x_h and z_p > z_h:
+#                     angle = angle
+#                 if x_p == x_h:
+#                     angle = 0  # ou 180
+#                 if z_p == z_h:
+#                     angle = 90  # ou 270
+#         except:
+#             pass
+#     if body2 is not None:
+#         try:
+#             if (hand == HandState.LEFT.value and body2.HandLeftState == HandState.OPEN.value) or \
+#                     (hand == HandState.RIGHT.value and body2.HandRightState == HandState.OPEN.value):
+#                 print("K - 2")
+#                 x2_h, y2_h, z2_h = (
+#                     body2.Joints.SpineBase.Position.X,
+#                     body2.Joints.SpineBase.Position.Y,
+#                     body2.Joints.SpineBase.Position.Z)
+#
+#                 if hand == HandState.LEFT.value:
+#                     x2_p, y2_p, z2_p = (
+#                         body2.Joints.WristLeft.Position.X,
+#                         body2.Joints.WristLeft.Position.Y,
+#                         body2.Joints.WristLeft.Position.Z)
+#                 else:
+#                     x2_p, y2_p, z2_p = (
+#                         body2.Joints.WristRight.Position.X,
+#                         body2.Joints.WristRight.Position.Y,
+#                         body2.Joints.WristRight.Position.Z)
+#
+#                 rh = abs(z2_p - z2_h)
+#                 rp = abs(x2_p - x2_h)
+#                 angle = np.degrees(np.arctan(rp / rh)) * 2 - 5
+#                 # if rp > rh:
+#                 #     angle = 90 + (100 - angle)
+#                 if x2_p > x2_h and z2_p > z2_h:
+#                     angle = 90 + angle
+#                 if x2_p > x2_h and z2_p < z2_h:
+#                     angle = 360 - 90 - angle
+#                 if x2_p < x2_h and z2_p < z2_h:
+#                     angle = 360 - angle
+#                 if x2_p < x2_h and z2_p > z2_h:
+#                     angle = angle
+#                 if x2_p == x2_h:
+#                     angle = 0  # ou 180
+#                 if z2_p == z2_h:
+#                     angle = 90  # ou 270
+#         except:
+#             pass
+#     return angle
+
+
 def best_angle_body_from_kinect(body, body2, hand, angle_kinect2, kinect_id):
     try:
         angle_k1 = angle_body_from_kinect(body, hand)
@@ -145,6 +230,10 @@ def best_angle_body_from_kinect(body, body2, hand, angle_kinect2, kinect_id):
             angle_k2 = 360 + angle_k2
         # print("K1:", angle_k1, " + ", angle_kinect2, " / ", kinect_id)
         # print("K2:", angle_k2, " + ", angle_kinect2, " / ", kinect_id)
+        if angle_k1 > 360:
+            angle_k1 = 360
+        if angle_k2 > 360:
+            angle_k2 = 360
         if body2.HandLeftState == HandState.OPEN.value or body2.HandRightState == HandState.OPEN.value:
             return angle_k2
         else:
@@ -174,14 +263,14 @@ def angle_body_from_kinect(body, hand):
         beta = math.sqrt(math.pow(x_p - x_h, 2) + math.pow(z_p - z_h, 2))
         alpha_h = ((x_h * math.sqrt(beta)) / x_p) * (1 / (1 - (x_h / x_p)))
 
-        angle = np.degrees(np.arcsin(x_h / alpha_h)) * 2 - 5
+        angle = np.degrees(np.arcsin(x_h / alpha_h)) * 2 - 10
         if z_p > z_h:
             angle = 90 + (100 - angle)
         return angle
     return None
 
 
-async def attempt_connection_and_data():
+async def attempt_connection_and_get_data():
     global reader, writer, reader2, writer2, state_reader, state_reader2
     data = None
     data2 = None
@@ -240,9 +329,8 @@ async def main():
     kinect_id = 1
     try:
         while True:
-            data, data2 = await attempt_connection_and_data()
+            data, data2 = await attempt_connection_and_get_data()
 
-            print('\n' * 20)
             body = transform(data, '1')
             body2 = transform(data2, '2')
 
@@ -251,6 +339,7 @@ async def main():
                 angle_kinect2 = init_angle_kinect2(angle_kinect2, hand, body, body2)
 
                 print(best_angle_body_from_kinect(body, body2, hand, angle_kinect2, kinect_id))
+                # print(best_angle_body_from_kinect_v2(body, body2, hand))
             except:
                 pass
     except KeyboardInterrupt:
