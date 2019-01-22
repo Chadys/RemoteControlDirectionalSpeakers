@@ -1,7 +1,7 @@
 master_client_attributes = {
     'TCP_IP': '37.59.57.203',  # node.nicopr.fr
     'TCP_PORT': 55557,
-    'BUFFER_SIZE': 1024,
+    'BUFFER_SIZE': 8192,
     'HANDSHAKE_MESSAGE': ["EHLO", "HELO"]
 }
 
@@ -36,12 +36,6 @@ kinect2_server_attributes = {
     'BUFFER_SIZE': 8192,
     'TCP_PORT': 6547,
 }
-
-# skeleton_kinect_server_attributes = {
-#     'TCP_IP': '192.168.1.38',
-#     'BUFFER_SIZE': 8192,
-#     'TCP_PORT': 6548,
-# }
 
 middleware_server_attributes = {
     'TCP_IP': '',

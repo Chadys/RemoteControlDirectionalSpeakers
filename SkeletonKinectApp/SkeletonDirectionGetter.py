@@ -1,10 +1,12 @@
-import TCP_socket_attributes as tcpAttr
 import asyncio
 import numpy as np
 import json
 import math
 from collections import namedtuple
 from enum import Enum
+
+import TCP_socket_attributes as tcpAttr
+import master_server_communication
 
 
 class HandState(Enum):
@@ -203,6 +205,8 @@ def get_direction_from_skeleton(json_body, json_body2):
 
 
 async def main():
+    master_server_communication.init_connection()
+    master_server_communication.send_man()
     hand = None
     angle_kinect2 = 90
     kinect_id = 1
@@ -224,7 +228,7 @@ async def main():
     except KeyboardInterrupt:
         writer.close()
         writer2.close()
-        pass
+        master_server_communication.close_connection()
 
 
 state_reader = False

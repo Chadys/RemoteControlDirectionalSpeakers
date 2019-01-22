@@ -3,8 +3,10 @@ import sys
 import inspect
 import socket
 import select
-import TCP_socket_attributes as tcpAttr
 import threading
+
+import TCP_socket_attributes as tcpAttr
+import master_server_communication
 
 src_dir = os.path.dirname(inspect.getfile(inspect.currentframe()))
 
@@ -19,6 +21,8 @@ import Leap
 
 
 def main():
+    master_server_communication.init_connection()
+    master_server_communication.send_man()
     listener = LeapVolumeControlSocketServer()
     controller = Leap.Controller()
     controller.add_listener(listener)
@@ -37,6 +41,7 @@ def main():
     except KeyboardInterrupt:
         pass
     finally:
+        master_server_communication.close_connection()
         s.close()
 
 

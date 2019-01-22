@@ -5,6 +5,8 @@ from inspect import currentframe, getframeinfo
 from pybass import *
 from pybassmix import *
 
+import master_server_communication
+
 
 def get_speakers_count():
     # hack to get real number because on my machine the number of speakers returned from BASS_GetInfo is always 0
@@ -24,6 +26,7 @@ def handle_bass_error(line):
     error_code = BASS_ErrorGetCode()
     print(f'l {line} | BASS error {error_code} : {get_error_description(error_code)}')
     BASS_Free()
+    master_server_communication.close_connection()
     exit(1)
 
 
@@ -135,7 +138,23 @@ def fill_streams(handles):
                 handle_bass_error(getframeinfo(currentframe()).lineno)
 
 
+def test_single_channel():
+    if not BASS_Init(-1, 44100, BASS_DEVICE_MONO, 0, 0):
+        handle_bass_error(getframeinfo(currentframe()).lineno)
+    num_speakers = get_speakers_count()
+    print(f'Current device has {num_speakers} output(s)')
+    h = BASS_StreamCreateFile(False, b'test.mp3', 0, 0, BASS_SPEAKER_N(0) | BASS_SPEAKER_LEFT | BASS_STREAM_AUTOFREE)
+    BASS_ChannelPlay(h, False)
+    while BASS_ChannelIsActive(h) == BASS_ACTIVE_PLAYING:
+        time.sleep(2)
+    if not BASS_Free():
+        handle_bass_error(getframeinfo(currentframe()).lineno)
+    exit(1)
+
+
 def main():
+    master_server_communication.init_connection()
+    master_server_communication.send_man()
     if not BASS_Init(-1, 44100, BASS_DEVICE_MONO, 0, 0):
         handle_bass_error(getframeinfo(currentframe()).lineno)
     print_infos()
@@ -162,6 +181,8 @@ def main():
     fill_streams(handles)
 
     play(mixer, handles)
+    # TODO fallback
+    # TODO get stream from socket
     # for handle in handles:
     #     if not BASS_ChannelSetAttribute(handle, BASS_ATTRIB_FREQ, 300000):
     #         handle_bass_error(getframeinfo(currentframe()).lineno)
@@ -180,6 +201,7 @@ def main():
 
     if not BASS_Free():
         handle_bass_error(getframeinfo(currentframe()).lineno)
+    master_server_communication.close_connection()
 
 
 if __name__ == "__main__":

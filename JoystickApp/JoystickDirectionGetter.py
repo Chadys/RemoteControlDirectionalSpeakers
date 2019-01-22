@@ -3,6 +3,7 @@ import pygame
 from pygame.math import Vector2
 
 import TCP_socket_attributes as tcpAttr
+import master_server_communication
 
 PRECISION = 0.01
 
@@ -36,6 +37,7 @@ async def get_joystick_events():
                     adjusted_angle = (angle + 90) % 360
                     if abs(adjusted_angle - last_angle) > PRECISION:
                         last_angle = adjusted_angle
+                        print(last_angle)
                         broadcast(last_angle)
         await asyncio.sleep(0.5)
 
@@ -87,6 +89,8 @@ tasks = get_joystick_events(), \
         tcpsocket_send_server
 
 try:
+    master_server_communication.init_connection()
+    master_server_communication.send_man()
     tasks = loop.run_until_complete(asyncio.gather(*tasks))
 except KeyboardInterrupt:
     pass
@@ -95,6 +99,7 @@ finally:
     broadcast_data_direction.cancel()
     asyncio.gather(*asyncio.Task.all_tasks()).cancel()
     loop.call_soon(loop.close)
+    master_server_communication.close_connection()
 
     joystick.quit()
     pygame.joystick.quit()

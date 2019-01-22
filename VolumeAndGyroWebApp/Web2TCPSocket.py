@@ -1,22 +1,25 @@
 import asyncio
 import websockets
 import json
-import TCP_socket_attributes as tcpAttr
 
-async def retransfer(websocket, _, isVolume):
+import TCP_socket_attributes as tcpAttr
+import master_server_communication
+
+
+async def retransfer(websocket, _, is_volume):
     try:
         async for message in websocket:
             data = json.loads(message)
             print(message)
-            broadcast(data, isVolume)
+            broadcast(data, is_volume)
 
     except websockets.exceptions.ConnectionClosed:
         pass
 
 
-async def send_to_subscribers(reader, writer, isVolume):
+async def send_to_subscribers(reader, writer, is_volume):
     while not reader.at_eof():
-        broadcast_data = broadcast_data_volume if isVolume else broadcast_data_direction
+        broadcast_data = broadcast_data_volume if is_volume else broadcast_data_direction
         if broadcast_data.cancelled():
             break
         read_task = loop.create_task(reader.read(100))
@@ -36,9 +39,9 @@ async def send_to_subscribers(reader, writer, isVolume):
     writer.close()
 
 
-def broadcast(data, isVolume):
+def broadcast(data, is_volume):
     global broadcast_data_volume, broadcast_data_direction
-    if isVolume:
+    if is_volume:
         broadcast_data_volume.set_result(data)
         broadcast_data_volume = loop.create_future()
     else:
@@ -71,6 +74,8 @@ tasks = websocket_server_volume,\
         tcpsocket_server_direction
 
 try:
+    master_server_communication.init_connection()
+    master_server_communication.send_man()
     tasks = loop.run_until_complete(asyncio.gather(*tasks))
     loop.run_forever()
 except KeyboardInterrupt:
@@ -82,3 +87,4 @@ finally:
     broadcast_data_direction.cancel()
     asyncio.gather(*asyncio.Task.all_tasks()).cancel()
     loop.call_soon(loop.close)
+    master_server_communication.close_connection()
