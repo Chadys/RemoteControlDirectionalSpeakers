@@ -5,11 +5,16 @@ import TCP_socket_attributes as tcpAttr
 
 
 class DirectionType(Enum):
+    Joystick = auto(),
     Kinect = auto(),
     Launchpad = auto(),
     WebApp = auto(),
-    Joystick = auto(),
     Unknown = auto()
+
+
+async def convert_and_retransfer_joystick_data(reader, writer):
+    # TODO
+    await retransfer_direction_data(reader, writer)
 
 
 async def convert_and_retransfer_kinect_data(reader, writer):
@@ -18,6 +23,11 @@ async def convert_and_retransfer_kinect_data(reader, writer):
 
 
 async def convert_and_retransfer_launchpad_data(reader, writer):
+    # TODO
+    await retransfer_direction_data(reader, writer)
+
+
+async def convert_and_retransfer_web_app_data(reader, writer):
     # TODO
     await retransfer_direction_data(reader, writer)
 
