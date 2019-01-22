@@ -153,8 +153,7 @@ def test_single_channel():
 
 
 def main():
-    master_server_communication.init_connection()
-    master_server_communication.send_man()
+    master_server = master_server_communication.MasterServer()
     if not BASS_Init(-1, 44100, BASS_DEVICE_MONO, 0, 0):
         handle_bass_error(getframeinfo(currentframe()).lineno)
     print_infos()
@@ -201,7 +200,7 @@ def main():
 
     if not BASS_Free():
         handle_bass_error(getframeinfo(currentframe()).lineno)
-    master_server_communication.close_connection()
+    master_server.close_connection()
 
 
 if __name__ == "__main__":

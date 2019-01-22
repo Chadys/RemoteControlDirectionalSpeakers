@@ -21,8 +21,7 @@ import Leap
 
 
 def main():
-    master_server_communication.init_connection()
-    master_server_communication.send_man()
+    master_server = master_server_communication.MasterServer()
     listener = LeapVolumeControlSocketServer()
     controller = Leap.Controller()
     controller.add_listener(listener)
@@ -41,7 +40,7 @@ def main():
     except KeyboardInterrupt:
         pass
     finally:
-        master_server_communication.close_connection()
+        master_server.close_connection()
         s.close()
 
 

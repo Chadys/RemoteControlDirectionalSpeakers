@@ -100,10 +100,8 @@ tcpsocket_send_server = asyncio.start_server(send_to_subscribers,
 tasks = connect_to_any_direction_output(), \
         tcpsocket_send_server
 
+master_server = master_server_communication.MasterServer()
 try:
-    master_server_communication.init_connection()
-    master_server_communication.send_man()
-
     tasks = loop.run_until_complete(asyncio.gather(*tasks))
 except KeyboardInterrupt:
     pass
@@ -112,4 +110,4 @@ finally:
     broadcast_data_direction.cancel()
     asyncio.gather(*asyncio.Task.all_tasks()).cancel()
     loop.call_soon(loop.close)
-    master_server_communication.close_connection()
+    master_server.close_connection()
