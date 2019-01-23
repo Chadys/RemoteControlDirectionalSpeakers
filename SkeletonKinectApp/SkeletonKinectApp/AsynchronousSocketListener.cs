@@ -22,7 +22,7 @@ public class AsynchronousSocketListener
 		ip = "Ip : " + ipAddress.ToString();
 		localEndPoint = new IPEndPoint(ipAddress, port);
 
-		// Create a TCP/IP socket.  
+		// Create a TCP/IP socket.
 		socket = new Socket(ipAddress.AddressFamily,
 			SocketType.Stream, ProtocolType.Tcp);
 	}

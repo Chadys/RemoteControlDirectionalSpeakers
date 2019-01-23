@@ -129,10 +129,12 @@ namespace SkeletonKinectApp
         /// </summary>
         private string statusText = null;
 
-        /// <summary>
-        /// Initializes a new instance of the MainWindow class.
-        /// </summary>
-        public MainWindow()
+		TCPClient tcpClient = new TCPClient();
+
+		/// <summary>
+		/// Initializes a new instance of the MainWindow class.
+		/// </summary>
+		public MainWindow()
         {
 			// one sensor is currently supported
 			this.kinectSensor = KinectSensor.GetDefault();
@@ -219,6 +221,12 @@ namespace SkeletonKinectApp
             // initialize the components (controls) of the window
             this.InitializeComponent();
 
+			if (!String.IsNullOrEmpty(tcpClient.error))
+			{
+				MessageBox.Show(tcpClient.error);
+				this.Close();
+			}
+
 			AsynchronousSocketListener.StartListening();
 
 			tbPortText.Text = "Port : " + ConfigurationManager.AppSettings["port"];
@@ -298,7 +306,8 @@ namespace SkeletonKinectApp
                 this.kinectSensor.Close();
                 this.kinectSensor = null;
             }
-        }
+			this.tcpClient.Close();
+		}
 
         /// <summary>
         /// Handles the body frame data arriving from the sensor
@@ -554,5 +563,5 @@ namespace SkeletonKinectApp
 				tbStateText.Foreground = new SolidColorBrush(Colors.Red);
 			}
         }
-    }
+	}
 }
