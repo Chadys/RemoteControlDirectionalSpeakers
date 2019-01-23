@@ -5,6 +5,10 @@
   "description": "Module outputting sound in a choosen direction and volume",
   "deps": [
     {
+      "name": "musicService",
+      "priority": 100
+    },
+    {
       "name": "directionService",
       "priority": 100
 

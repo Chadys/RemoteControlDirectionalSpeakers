@@ -1,11 +1,83 @@
 import time
+import asyncio
+import json
 
 from inspect import currentframe, getframeinfo
+from operator import itemgetter
 
 from pybass import *
 from pybassmix import *
 
 import master_server_communication
+
+
+vars = {'volume': 0.6, 'direction': 0}
+master_server = master_server_communication.MasterServer()
+server_dict = {}
+bass_put_error_value = ctypes.c_uint32(-1).value  # 4294967295, because BASS_StreamPutData return DWORD(-1) in case of error
+
+
+class ConnexionManager():
+
+    def __init__(self, ip, name, transport, protocol):
+        self.ip = ip
+        self.name = name
+        self.transport = transport
+        self.protocol = protocol
+
+
+class UDPMusicClientProtocol(asyncio.DatagramProtocol):
+
+    def __init__(self, handles, loop):
+        self.transport = None
+        self.handles = handles
+        self.on_con_lost = loop.create_future()
+
+    def connection_made(self, transport):
+        self.transport = transport
+
+    def datagram_received(self, data, addr):
+        for handle in self.handles:
+            amount = BASS_StreamPutData(handle, data, len(data) | BASS_STREAMPROC_END)
+            if amount == bass_put_error_value:
+                handle_bass_error(getframeinfo(currentframe()).lineno)
+        self.transport.close()
+
+    def error_received(self, exc):
+        music_server = server_dict['music']
+        master_server.send_failure(music_server.ip, music_server.name, 'error ({})'.format(exc))
+        server_dict['music'] = None
+
+    def connection_lost(self, exc):
+        self.on_con_lost.set_result(True)
+        music_server = server_dict['music']
+        master_server.send_failure(music_server.ip, music_server.name, 'shutdown')
+        server_dict['music'] = None
+
+
+class TCPClientProtocol(asyncio.Protocol):
+
+    def __init__(self, var_name, loop):
+        self.loop = loop
+        self.on_con_lost = loop.create_future()
+        self.var_name = var_name
+
+    def connection_made(self, transport):
+        self.transport = transport
+
+    def data_received(self, data):
+        content = json.loads(data.decode())
+        vars[self.var_name] = content.get(self.var_name, 0.6)
+
+    def connection_lost(self, exc):
+        self.on_con_lost.set_result(True)
+        server = server_dict[self.var_name]
+        master_server.send_failure(server.ip, server.name, 'error ({})'.format(exc))
+
+    def eof_received(self):
+        server = server_dict[self.var_name]
+        master_server.send_failure(server.ip, server.name, 'shutdown')
+        return False
 
 
 def get_speakers_count():
@@ -26,7 +98,7 @@ def handle_bass_error(line):
     error_code = BASS_ErrorGetCode()
     print(f'l {line} | BASS error {error_code} : {get_error_description(error_code)}')
     BASS_Free()
-    master_server_communication.close_connection()
+    master_server.close_connection()
     exit(1)
 
 
@@ -127,15 +199,17 @@ def init_pos(num_output):
     return pos
 
 
-def fill_streams(handles):
-    global data
-    error_value = ctypes.c_uint32(-1).value  # 4294967295, because BASS_StreamPutData return DWORD(-1) in case of error
+async def fill_streams(handles):
+    music_server = server_dict['music']
+    if music_server is not None:
+        await music_server.protocol.on_con_lost
     with open('test.pcm', 'rb') as f:
         data = f.read()
         for handle in handles:
             amount = BASS_StreamPutData(handle, data, len(data) | BASS_STREAMPROC_END)
-            if amount == error_value:
+            if amount == bass_put_error_value:
                 handle_bass_error(getframeinfo(currentframe()).lineno)
+        await asyncio.sleep(1)
 
 
 def test_single_channel():
@@ -152,8 +226,42 @@ def test_single_channel():
     exit(1)
 
 
-def main():
-    master_server = master_server_communication.MasterServer()
+async def connect_to_client(service_type, manifest, available_manifests, handles, loop):
+    wanted_services = [dep for dep in manifest['deps'] if service_type in dep['name']]
+    wanted_services.sort(key=itemgetter('priority'))
+    for wanted_service in wanted_services[::-1]:
+        service_name = wanted_service['name']
+        for available_manifest in available_manifests:
+            for service in available_manifest.get('services', []):
+                if service.get('name', None) == service_name:
+                    ip = available_manifest.get('ip', None)
+                    port = service.get('port', None)
+                    type = service.get('type', None)
+                    if type == 'TCP':
+                        return ConnexionManager(ip, service_name, *await loop.create_connection(
+                            lambda: TCPClientProtocol(service_type, loop), ip, port))
+                    elif type == 'UDP':
+                        return ConnexionManager(ip, service_name, *await loop.create_datagram_endpoint(
+                            lambda: UDPMusicClientProtocol(handles, loop), remote_addr=(ip, port)))
+    return None
+
+
+async def update_glob(var_name, step, max_value, reset_value):
+    direction_server = server_dict['direction']
+    if direction_server is not None:
+        await direction_server.protocol.on_con_lost
+    while True:
+        vars[var_name] += step
+        if vars[var_name] > max_value:
+            vars[var_name] = reset_value
+        await asyncio.sleep(1)
+
+
+async def main(loop):
+    available_manifests = master_server.get_man()
+
+    manifest = master_server_communication.MasterServer.get_self_man()
+
     if not BASS_Init(-1, 44100, BASS_DEVICE_MONO, 0, 0):
         handle_bass_error(getframeinfo(currentframe()).lineno)
     print_infos()
@@ -177,11 +285,15 @@ def main():
 
     pos = init_pos(num_outputs)
 
-    fill_streams(handles)
+    for service_type in ['volume', 'direction', 'music']:
+        server_dict[service_type] = await connect_to_client(service_type, manifest, available_manifests, handles, loop)
+
+    asyncio.ensure_future(update_glob('volume', 0.01, 1, 0.1))
+    asyncio.ensure_future(update_glob('direction', 1, 360, 0))
+    asyncio.ensure_future(fill_streams(handles))
+    await asyncio.sleep(1)
 
     play(mixer, handles)
-    # TODO fallback
-    # TODO get stream from socket
     # for handle in handles:
     #     if not BASS_ChannelSetAttribute(handle, BASS_ATTRIB_FREQ, 300000):
     #         handle_bass_error(getframeinfo(currentframe()).lineno)
@@ -195,7 +307,7 @@ def main():
         print(seconds_counter)
         direction = seconds_counter*5 % 360
         print(f'Direction : {direction}')
-        update_all_speakers_volume2(handles, direction, pos, 0.6)
+        update_all_speakers_volume2(handles, direction, pos, vars['volume'])
         time.sleep(2)
 
     if not BASS_Free():
@@ -204,4 +316,12 @@ def main():
 
 
 if __name__ == "__main__":
-    main()
+    loop = asyncio.get_event_loop()
+    loop.run_until_complete(main(loop))
+    for _, server in server_dict.items():
+        if server is not None:
+            if server.type == 'TCP':
+                server.writer.close()
+            elif server.type == 'UDP':
+                server.transport.close()
+    loop.close()

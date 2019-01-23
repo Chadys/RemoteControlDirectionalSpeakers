@@ -1,5 +1,5 @@
-import json
 import socket
+import json
 import TCP_socket_attributes as tcpAttr
 
 
@@ -32,7 +32,10 @@ class MasterServer:
         data = self.s.recv(tcpAttr.master_client_attributes['BUFFER_SIZE'])
         if not data:
             raise ValueError
-        return data.decode("utf-8")
+        return json.loads(data.decode("utf-8"))
+
+    def send_failure(self, ip, name, status):
+        self.s.send('{{"name": "{}", "ip": "{}", "status": "{}"}}'.format(name, ip, status).encode('utf-8'))
 
     @staticmethod
     def get_self_man():
