@@ -7,17 +7,21 @@ import master_server_communication
 from SkeletonDirectionGetter import SkeletonDirectionGetter
 
 
+_ID_SKELETON_KINECT_SERVICE = 0
+_ID_SKELETON_KINECT_SERVICE2 = 1
+_ID_WEB_APPSERVICE = 2
+_ID_JOYSTICK_SERVICE = 3
+
+
 class DirectionType(Enum):
     Joystick = auto(),
     Kinect = auto(),
     DoubleKinect = auto(),
-    Launchpad = auto(),
     WebApp = auto(),
     Unknown = auto()
 
 
 async def convert_and_retransfer_joystick_data(reader, writer):
-    # TODO
     await retransfer_direction_data(reader, writer)
 
 
@@ -55,13 +59,7 @@ async def convert_and_retransfer_kinect_data(reader, writer):
     writer.close()
 
 
-async def convert_and_retransfer_launchpad_data(reader, writer):
-    # TODO
-    await retransfer_direction_data(reader, writer)
-
-
 async def convert_and_retransfer_web_app_data(reader, writer):
-    # TODO
     await retransfer_direction_data(reader, writer)
 
 
@@ -69,52 +67,46 @@ async def retransfer_direction_data(reader, writer):
     while not reader.at_eof() and not broadcast_data_direction.cancelled():
         message = await reader.read(100)
         data = json.loads(message)
-        print(message)
-        broadcast(data)
+        res = data['direction']
+        print(res)
+        broadcast(res)
     writer.close()
 
 
 async def get_port_and_type_from_direction_service():
     man = json.loads(master_server.get_man())
-    skeleton_kinect_service_port = ''
-    skeleton_kinect_service_port2 = ''
-    coordinate_launchpad_service_port = ''
-    direction_webapp_service_port = ''
-    direction_joystick_service_port = ''
-    ip = ''
-    ip2 = ''  # Only used for the case of DoubleKinect
+    deps = []
+    services_ip_port = {}
+    for dep in self_man['deps']:
+        deps.append(dep['name'])
 
     try:
         for server in man:
-            ip = server['ip']
             try:  # this try to prevent manifest which doesnt contains services
                 for service in server['services']:
-                    if service['name'] == 'skeletonKinectService':
-                        skeleton_kinect_service_port = service['port']
-                    elif service['name'] == 'skeletonKinectService2':
-                        ip2 = ip
-                        skeleton_kinect_service_port2 = service['port']
-                    elif service['name'] == 'coordinateLaunchpadService':
-                        coordinate_launchpad_service_port = service['port']
-                    elif service['name'] == 'directionWebappService':
-                        direction_webapp_service_port = service['port']
-                    elif service['name'] == 'directionJoystickService':
-                        direction_joystick_service_port = service['port']
+                    if service['name'] in deps:
+                        services_ip_port[service['name']] = server['ip'], service['port']
             except:
                 pass
     except:
         pass
 
-    if skeleton_kinect_service_port != '' and skeleton_kinect_service_port2 != '':
-        return [ip, ip2], [skeleton_kinect_service_port, skeleton_kinect_service_port2], DirectionType.DoubleKinect
-    elif skeleton_kinect_service_port != '' or skeleton_kinect_service_port2 != '':
-        return ip, skeleton_kinect_service_port, DirectionType.Kinect
-    elif coordinate_launchpad_service_port != '':
-        return ip, coordinate_launchpad_service_port, DirectionType.Launchpad
-    elif direction_webapp_service_port != '':
-        return ip, direction_webapp_service_port, DirectionType.WebApp
-    elif direction_joystick_service_port != '':
-        return ip, direction_joystick_service_port, DirectionType.Joystick
+    if deps[_ID_SKELETON_KINECT_SERVICE] in services_ip_port and deps[_ID_SKELETON_KINECT_SERVICE2] in services_ip_port:
+        ip, port = services_ip_port[deps[_ID_SKELETON_KINECT_SERVICE]]
+        ip2, port2 = services_ip_port[deps[_ID_SKELETON_KINECT_SERVICE2]]
+        return [ip, ip2], [port, port2], DirectionType.DoubleKinect
+    elif deps[_ID_SKELETON_KINECT_SERVICE] in services_ip_port:
+        ip, port = services_ip_port[deps[_ID_SKELETON_KINECT_SERVICE]]
+        return ip, port, DirectionType.Kinect
+    elif deps[_ID_SKELETON_KINECT_SERVICE2] in services_ip_port:
+        ip, port = services_ip_port[deps[_ID_SKELETON_KINECT_SERVICE2]]
+        return ip, port, DirectionType.Kinect
+    elif deps[_ID_WEB_APPSERVICE] in services_ip_port:
+        ip, port = services_ip_port[deps[_ID_WEB_APPSERVICE]]
+        return ip, port, DirectionType.WebApp
+    elif deps[_ID_JOYSTICK_SERVICE] in services_ip_port:
+        ip, port = services_ip_port[deps[_ID_JOYSTICK_SERVICE]]
+        return ip, port, DirectionType.Joystick
     return None, None, None
 
 
@@ -132,8 +124,6 @@ async def connect_to_any_direction_output():
 
         if direction_type == DirectionType.Kinect:
             await convert_and_retransfer_kinect_data(reader, writer)
-        elif direction_type == DirectionType.Launchpad:
-            await convert_and_retransfer_launchpad_data(reader, writer)
         elif direction_type == DirectionType.Joystick:
             await convert_and_retransfer_joystick_data(reader, writer)
         elif direction_type == DirectionType.WebApp:
@@ -182,6 +172,7 @@ tasks = connect_to_any_direction_output(), \
         tcpsocket_send_server
 
 master_server = master_server_communication.MasterServer()
+self_man = master_server.get_self_man()
 try:
     tasks = loop.run_until_complete(asyncio.gather(*tasks))
 except KeyboardInterrupt:

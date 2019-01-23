@@ -9,16 +9,16 @@
       "priority": 100
     },
     {
-      "name": "coordinateLaunchpadService",
-      "priority": 90
+      "name": "skeletonKinectService2",
+      "priority": 100
     },
     {
       "name": "directionWebappService",
-      "priority": 80
+      "priority": 90
     },
     {
       "name": "directionJoystickService",
-      "priority": 70
+      "priority": 80
     }
   ],
 

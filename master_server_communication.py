@@ -1,3 +1,4 @@
+import json
 import socket
 import TCP_socket_attributes as tcpAttr
 
@@ -32,3 +33,9 @@ class MasterServer:
         if not data:
             raise ValueError
         return data.decode("utf-8")
+
+    @staticmethod
+    def get_self_man():
+        with open('manifest.json', 'r') as manifest:
+            man = manifest.read()
+        return json.loads(man)
