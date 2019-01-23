@@ -27,7 +27,7 @@
       "name": "directionService",
       "format": "JSON",
       "type": "TCP",
-      "port": 6546
+      "port": 6555
     }
   ],
   "os": "Win/Mac/Linux",

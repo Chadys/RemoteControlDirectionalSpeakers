@@ -18,6 +18,7 @@ class SkeletonDirectionGetter:
         self.hand = None
         self.angle_kinect2 = 90
         self.kinect_id = 1
+        self.double_connected = False
 
     @staticmethod
     def init_hand_kinect(hand_to_use, kinect_id, body, body2):
@@ -86,6 +87,25 @@ class SkeletonDirectionGetter:
         try:
             angle_k1 = self.angle_body_from_kinect(body, hand)
             angle_k2 = self.angle_body_from_kinect(body2, hand)
+
+            if self.double_connected is True and (angle_k1 is None or angle_k2 is None):
+                try:
+                    if angle_k1 is not None and kinect_id == 2:
+                        angle_k1 += angle_kinect2
+                        angle_k1 = 360 if angle_k1 > 360 else angle_k1
+                    elif angle_k2 is not None:
+                        angle_k2 += angle_kinect2
+                        angle_k2 = 360 if angle_k2 > 360 else angle_k2
+                except:
+                    pass
+
+            if angle_k1 is None:
+                return angle_k2 if angle_k2 > 0 else 360 + angle_k2
+            elif angle_k2 is None:
+                return angle_k1 if angle_k1 > 0 else 360 + angle_k1
+            else:
+                self.double_connected = True
+
             if kinect_id == 2:
                 angle_k1 += angle_kinect2
             else:
@@ -94,8 +114,6 @@ class SkeletonDirectionGetter:
                 angle_k1 = 360 + angle_k1
             if angle_k2 < 0:
                 angle_k2 = 360 + angle_k2
-            # print("K1:", angle_k1, " + ", angle_kinect2, " / ", kinect_id)
-            # print("K2:", angle_k2, " + ", angle_kinect2, " / ", kinect_id)
             if angle_k1 > 360:
                 angle_k1 = 360
             if angle_k2 > 360:
@@ -105,11 +123,11 @@ class SkeletonDirectionGetter:
             else:
                 return angle_k1
         except:
-            pass
+            return 'None'
 
     @staticmethod
     def angle_body_from_kinect(body, hand):
-        if body is not None:
+        if body is not None and body != 'None':
             x_h, y_h, z_h = (
                 body.Joints.SpineBase.Position.X,
                 body.Joints.SpineBase.Position.Y,
@@ -129,7 +147,7 @@ class SkeletonDirectionGetter:
             beta = math.sqrt(math.pow(x_p - x_h, 2) + math.pow(z_p - z_h, 2))
             alpha_h = ((x_h * math.sqrt(beta)) / x_p) * (1 / (1 - (x_h / x_p)))
 
-            angle = np.degrees(np.arcsin(x_h / alpha_h)) * 2 - 10
+            angle = np.degrees(np.arcsin(x_h / alpha_h)) * 2 - 5
             if z_p > z_h:
                 angle = 90 + (100 - angle)
             return angle

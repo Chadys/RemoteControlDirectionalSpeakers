@@ -11,6 +11,6 @@
       "port": 6546
     }
   ],
-  "os": "Win/Mac/Linux",
+  "os": "Win",
   "type": "output"
 }

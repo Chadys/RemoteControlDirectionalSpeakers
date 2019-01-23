@@ -24,24 +24,34 @@ async def convert_and_retransfer_joystick_data(reader, writer):
 async def convert_and_retransfer_double_kinect_data(reader, writer, reader2, writer2):
     skeleton_direction_getter = SkeletonDirectionGetter()
     while not reader.at_eof() and not reader2.at_eof() and not broadcast_data_direction.cancelled():
-        body = await asyncio.wait_for(reader.read(8192), timeout=2)
-        body2 = await asyncio.wait_for(reader2.read(8192), timeout=2)
-        direction = skeleton_direction_getter.get_direction_from_skeleton(body, body2)
-        print(direction)
-        if direction is not None:
-            broadcast(direction)
+        try:
+            body = await asyncio.wait_for(reader.read(8192), timeout=2)
+            body2 = await asyncio.wait_for(reader2.read(8192), timeout=2)
+            direction = skeleton_direction_getter.get_direction_from_skeleton(body, body2)
+            print(direction)
+            if direction is not None:
+                broadcast(direction)
+        except:
+            break
     writer.close()
     writer2.close()
 
 
 async def convert_and_retransfer_kinect_data(reader, writer):
+    acc = 0
     skeleton_direction_getter = SkeletonDirectionGetter()
     while not reader.at_eof() and not broadcast_data_direction.cancelled():
-        body = await asyncio.wait_for(reader.read(8192), timeout=2)
-        direction = skeleton_direction_getter.get_direction_from_skeleton(body, 'None')
-        print(direction)
-        if direction is not None:
-            broadcast(direction)
+        try:
+            body = await asyncio.wait_for(reader.read(8192), timeout=2)
+            direction = skeleton_direction_getter.get_direction_from_skeleton(body, 'None')
+            print(direction)
+            if direction is not None:
+                broadcast(direction)
+            acc += 1
+            if acc > 4:
+                break
+        except:
+            break
     writer.close()
 
 
@@ -72,27 +82,31 @@ async def get_port_and_type_from_direction_service():
     direction_webapp_service_port = ''
     direction_joystick_service_port = ''
     ip = ''
+    ip2 = ''  # Only used for the case of DoubleKinect
 
     try:
         for server in man:
             ip = server['ip']
-            for service in server['services']:
-                if service['name'] == 'skeletonKinectService':
-                    skeleton_kinect_service_port = service['port']
-                elif service['name'] == 'skeletonKinectService2':
-                    skeleton_kinect_service_port2 = service['port']
-                elif service['name'] == 'coordinateLaunchpadService':
-                    coordinate_launchpad_service_port = service['port']
-                elif service['name'] == 'directionWebappService':
-                    direction_webapp_service_port = service['port']
-                elif service['name'] == 'directionJoystickService':
-                    direction_joystick_service_port = service['port']
+            try:  # this try to prevent manifest which doesnt contains services
+                for service in server['services']:
+                    if service['name'] == 'skeletonKinectService':
+                        skeleton_kinect_service_port = service['port']
+                    elif service['name'] == 'skeletonKinectService2':
+                        ip2 = ip
+                        skeleton_kinect_service_port2 = service['port']
+                    elif service['name'] == 'coordinateLaunchpadService':
+                        coordinate_launchpad_service_port = service['port']
+                    elif service['name'] == 'directionWebappService':
+                        direction_webapp_service_port = service['port']
+                    elif service['name'] == 'directionJoystickService':
+                        direction_joystick_service_port = service['port']
+            except:
+                pass
     except:
         pass
 
-    ip = '192.168.0.8'  # TODO tmp line a effacer
     if skeleton_kinect_service_port != '' and skeleton_kinect_service_port2 != '':
-        return [ip, skeleton_kinect_service_port], [ip, skeleton_kinect_service_port2], DirectionType.DoubleKinect
+        return [ip, ip2], [skeleton_kinect_service_port, skeleton_kinect_service_port2], DirectionType.DoubleKinect
     elif skeleton_kinect_service_port != '' or skeleton_kinect_service_port2 != '':
         return ip, skeleton_kinect_service_port, DirectionType.Kinect
     elif coordinate_launchpad_service_port != '':
@@ -101,12 +115,14 @@ async def get_port_and_type_from_direction_service():
         return ip, direction_webapp_service_port, DirectionType.WebApp
     elif direction_joystick_service_port != '':
         return ip, direction_joystick_service_port, DirectionType.Joystick
-    return None
+    return None, None, None
 
 
 async def connect_to_any_direction_output():
     while not broadcast_data_direction.cancelled():
         ip, port, direction_type = await get_port_and_type_from_direction_service()
+        if ip is None and port is None and direction_type is None:
+            continue
         if direction_type == DirectionType.DoubleKinect:
             reader, writer = await asyncio.open_connection(ip[0], port[0], loop=loop)
             reader2, writer2 = await asyncio.open_connection(ip[1], port[1], loop=loop)
@@ -118,10 +134,14 @@ async def connect_to_any_direction_output():
             await convert_and_retransfer_kinect_data(reader, writer)
         elif direction_type == DirectionType.Launchpad:
             await convert_and_retransfer_launchpad_data(reader, writer)
+        elif direction_type == DirectionType.Joystick:
+            await convert_and_retransfer_joystick_data(reader, writer)
+        elif direction_type == DirectionType.WebApp:
+            await convert_and_retransfer_web_app_data(reader, writer)
         elif direction_type == DirectionType.Unknown:
-            continue
-        else:  # DirectionType.WebApp or DirectionType.Joystick
             await retransfer_direction_data(reader, writer)
+        else:
+            continue
 
 
 async def send_to_subscribers(reader, writer):

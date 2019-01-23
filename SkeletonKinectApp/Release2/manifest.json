@@ -5,7 +5,7 @@
   "description": "Module sending skeleton data from kinect",
   "services": [
     {
-      "name": "skeletonKinectService",
+      "name": "skeletonKinectService2",
       "format": "JSON",
       "type": "TCP",
       "port": 6547
