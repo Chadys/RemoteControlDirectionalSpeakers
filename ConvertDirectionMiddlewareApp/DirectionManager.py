@@ -111,9 +111,13 @@ async def get_port_and_type_from_direction_service():
 
 
 async def connect_to_any_direction_output():
+    inc = 0.0
     while not broadcast_data_direction.cancelled():
         ip, port, direction_type = await get_port_and_type_from_direction_service()
         if ip is None and port is None and direction_type is None:
+            inc = inc + 0.1 if inc < 360 else 0
+            print('No service available', inc)
+            broadcast(inc)
             continue
         if direction_type == DirectionType.DoubleKinect:
             reader, writer = await asyncio.open_connection(ip[0], port[0], loop=loop)
