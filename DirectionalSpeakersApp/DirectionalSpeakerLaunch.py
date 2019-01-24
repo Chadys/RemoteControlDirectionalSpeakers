@@ -185,6 +185,8 @@ def update_all_speakers_volume2(handles, direction, all_pos, global_volume=1.0):
             angle = 0
         vol.append(angle)
         total += angle
+        if total == 0:
+            total = 360
     vol = [(x/total)*global_volume for x in vol]
     for index, handle in enumerate(handles):
         if not BASS_ChannelSetAttribute(handle, BASS_ATTRIB_VOL, vol[index]):
@@ -203,7 +205,7 @@ async def fill_streams(handles):
     music_server = server_dict['music']
     if music_server is not None:
         await music_server.protocol.on_con_lost
-    with open('test.pcm', 'rb') as f:
+    with open('2.pcm', 'rb') as f:
         data = f.read()
         for handle in handles:
             amount = BASS_StreamPutData(handle, data, len(data) | BASS_STREAMPROC_END)
@@ -247,9 +249,9 @@ async def connect_to_client(service_type, manifest, available_manifests, handles
 
 
 async def update_glob(var_name, step, max_value, reset_value):
-    direction_server = server_dict['direction']
-    if direction_server is not None:
-        await direction_server.protocol.on_con_lost
+    server = server_dict[var_name]
+    if server is not None:
+        await server.protocol.on_con_lost
     while True:
         vars[var_name] += step
         if vars[var_name] > max_value:
@@ -308,7 +310,7 @@ async def main(loop):
         direction = seconds_counter*5 % 360
         print(f'Direction : {direction}')
         update_all_speakers_volume2(handles, direction, pos, vars['volume'])
-        time.sleep(2)
+        await asyncio.sleep(2)
 
     if not BASS_Free():
         handle_bass_error(getframeinfo(currentframe()).lineno)
