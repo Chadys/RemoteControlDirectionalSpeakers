@@ -32,7 +32,10 @@ class MasterServer:
         data = self.s.recv(tcpAttr.master_client_attributes['BUFFER_SIZE'])
         if not data:
             raise ValueError
-        return json.loads(data.decode("utf-8"))
+        try:
+            return json.loads(data.decode("utf-8"))
+        except json.JSONDecodeError:
+            return None
 
     def send_failure(self, ip, name, status):
         self.s.send('{{"name": "{}", "ip": "{}", "status": "{}"}}'.format(name, ip, status).encode('utf-8'))

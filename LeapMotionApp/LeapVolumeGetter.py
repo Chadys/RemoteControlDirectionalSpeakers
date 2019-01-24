@@ -101,7 +101,7 @@ class LeapVolumeControlSocketServer(Leap.Listener):
             elif self.volumePercent > 100:
                 self.volumePercent = 100
 
-            # print("Volume = {} %".format(self.volumePercent))
+            print("Volume = {} %".format(self.volumePercent))
             if self.volumePercent != self.previousVolumePercent:
                 self.send_to_client()
                 self.previousVolumePercent = self.volumePercent

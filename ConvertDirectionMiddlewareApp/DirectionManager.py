@@ -33,7 +33,7 @@ async def convert_and_retransfer_double_kinect_data(reader, writer, reader2, wri
             body2 = await asyncio.wait_for(reader2.read(8192), timeout=2)
             direction = skeleton_direction_getter.get_direction_from_skeleton(body, body2)
             print(direction)
-            if direction is not None:
+            if direction is not None and direction != 'None':
                 broadcast(direction)
         except:
             break
@@ -47,9 +47,9 @@ async def convert_and_retransfer_kinect_data(reader, writer):
     while not reader.at_eof() and not broadcast_data_direction.cancelled():
         try:
             body = await asyncio.wait_for(reader.read(8192), timeout=2)
-            direction = skeleton_direction_getter.get_direction_from_skeleton(body, 'None')
+            direction = skeleton_direction_getter.get_direction_from_skeleton(body, None)
             print(direction)
-            if direction is not None:
+            if direction is not None and direction != 'None':
                 broadcast(direction)
             acc += 1
             if acc > 4:
@@ -74,7 +74,9 @@ async def retransfer_direction_data(reader, writer):
 
 
 async def get_port_and_type_from_direction_service():
-    man = json.loads(master_server.get_man())
+    man = master_server.get_man()
+    if man is None:
+        return None, None, None
     deps = []
     services_ip_port = {}
     for dep in self_man['deps']:
@@ -115,7 +117,7 @@ async def connect_to_any_direction_output():
     while not broadcast_data_direction.cancelled():
         ip, port, direction_type = await get_port_and_type_from_direction_service()
         if ip is None and port is None and direction_type is None:
-            inc = inc + 0.1 if inc < 360 else 0
+            inc = inc + 0.5 if inc < 360 else 0
             print('No service available', inc)
             broadcast(inc)
             continue
@@ -145,6 +147,12 @@ async def send_to_subscribers(reader, writer):
             data = await f
             if isinstance(data, dict):
                 writer.write(json.dumps(data).encode())
+                await writer.drain()
+                if not read_task.done():
+                    read_task.cancel()
+                break
+            elif isinstance(data, float):
+                writer.write('{{"direction":{}}}'.format(data).encode())
                 await writer.drain()
                 if not read_task.done():
                     read_task.cancel()

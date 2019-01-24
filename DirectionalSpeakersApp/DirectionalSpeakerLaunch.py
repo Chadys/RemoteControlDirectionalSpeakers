@@ -32,6 +32,7 @@ class UDPMusicClientProtocol(asyncio.DatagramProtocol):
         self.transport = None
         self.handles = handles
         self.on_con_lost = loop.create_future()
+        self.shutdown = False
 
     def connection_made(self, transport):
         self.transport = transport
@@ -45,14 +46,18 @@ class UDPMusicClientProtocol(asyncio.DatagramProtocol):
 
     def error_received(self, exc):
         music_server = server_dict['music']
-        master_server.send_failure(music_server.ip, music_server.name, 'error ({})'.format(exc))
+        if not self.shutdown:
+            master_server.send_failure(music_server.ip, music_server.name, 'error ({})'.format(exc))
         server_dict['music'] = None
+        self.shutdown = True
 
     def connection_lost(self, exc):
         self.on_con_lost.set_result(True)
         music_server = server_dict['music']
-        master_server.send_failure(music_server.ip, music_server.name, 'shutdown')
+        if not self.shutdown:
+            master_server.send_failure(music_server.ip, music_server.name, 'shutdown')
         server_dict['music'] = None
+        self.shutdown = True
 
 
 class TCPClientProtocol(asyncio.Protocol):
@@ -61,22 +66,30 @@ class TCPClientProtocol(asyncio.Protocol):
         self.loop = loop
         self.on_con_lost = loop.create_future()
         self.var_name = var_name
+        self.shutdown = False
 
     def connection_made(self, transport):
         self.transport = transport
 
     def data_received(self, data):
-        content = json.loads(data.decode())
-        vars[self.var_name] = content.get(self.var_name, 0.6)
+        content = json.JSONDecoder().raw_decode(data.decode())[0]
+        value = content.get(self.var_name, 60)
+        if self.var_name == 'volume':
+            value /= 100
+        vars[self.var_name] = value
+
 
     def connection_lost(self, exc):
         self.on_con_lost.set_result(True)
         server = server_dict[self.var_name]
-        master_server.send_failure(server.ip, server.name, 'error ({})'.format(exc))
+        if not self.shutdown:
+            master_server.send_failure(server.ip, server.name, 'error ({})'.format(exc))
+            self.shutdown = True
 
     def eof_received(self):
         server = server_dict[self.var_name]
         master_server.send_failure(server.ip, server.name, 'shutdown')
+        self.shutdown = True
         return False
 
 
@@ -129,11 +142,12 @@ def print_infos():
 def init_channels(mixer, handles, num_speakers):
     # use only one output of each physical speaker
     for i in range(1, num_speakers+1):
-        if not BASS_Mixer_StreamAddChannel(mixer, handles[-1],
-                                           BASS_SPEAKER_N(i) | BASS_SPEAKER_LEFT | BASS_STREAM_AUTOFREE):
-            handles.pop()
-            return
-        handles.append(get_stream())
+        for speaker in [BASS_SPEAKER_LEFT, BASS_SPEAKER_RIGHT]:
+            if not BASS_Mixer_StreamAddChannel(mixer, handles[-1],
+                                               BASS_SPEAKER_N(i) | speaker | BASS_STREAM_AUTOFREE):
+                handles.pop()
+                return
+            handles.append(get_stream())
 
 
 def play(mixer, handles):
@@ -188,6 +202,7 @@ def update_all_speakers_volume2(handles, direction, all_pos, global_volume=1.0):
         if total == 0:
             total = 360
     vol = [(x/total)*global_volume for x in vol]
+    # vol = [1*global_volume]*len(vol)
     for index, handle in enumerate(handles):
         if not BASS_ChannelSetAttribute(handle, BASS_ATTRIB_VOL, vol[index]):
             handle_bass_error(getframeinfo(currentframe()).lineno)
@@ -229,6 +244,8 @@ def test_single_channel():
 
 
 async def connect_to_client(service_type, manifest, available_manifests, handles, loop):
+    if available_manifests is None:
+        return None
     wanted_services = [dep for dep in manifest['deps'] if service_type in dep['name']]
     wanted_services.sort(key=itemgetter('priority'))
     for wanted_service in wanted_services[::-1]:
@@ -289,10 +306,11 @@ async def main(loop):
 
     for service_type in ['volume', 'direction', 'music']:
         server_dict[service_type] = await connect_to_client(service_type, manifest, available_manifests, handles, loop)
+    await asyncio.sleep(1)
 
+    asyncio.ensure_future(fill_streams(handles))
     asyncio.ensure_future(update_glob('volume', 0.01, 1, 0.1))
     asyncio.ensure_future(update_glob('direction', 1, 360, 0))
-    asyncio.ensure_future(fill_streams(handles))
     await asyncio.sleep(1)
 
     play(mixer, handles)
@@ -307,9 +325,12 @@ async def main(loop):
         channel_position = BASS_ChannelGetPosition(handles[0], BASS_POS_BYTE)
         seconds_counter = int(BASS_ChannelBytes2Seconds(handles[0], channel_position))
         print(seconds_counter)
-        direction = seconds_counter*5 % 360
+        # direction = seconds_counter*5 % 360
+        direction = vars['direction']
         print(f'Direction : {direction}')
-        update_all_speakers_volume2(handles, direction, pos, vars['volume'])
+        volume = vars['volume']
+        print(f'Volume : {volume}')
+        update_all_speakers_volume(handles, direction, pos, volume)
         await asyncio.sleep(2)
 
     if not BASS_Free():
